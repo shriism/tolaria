@@ -130,6 +130,10 @@
   color: #6a6;
 }
 
+.note-list__item--selected {
+  background: #2a2a4a;
+}
+
 .note-list__item--pinned {
   background: #1e1e3a;
   border-left: 3px solid #6a6;

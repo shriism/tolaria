@@ -5,6 +5,8 @@ import './NoteList.css'
 interface NoteListProps {
   entries: VaultEntry[]
   selection: SidebarSelection
+  selectedNote: VaultEntry | null
+  onSelectNote: (entry: VaultEntry) => void
 }
 
 /** Check if a wikilink array (e.g. belongsTo) references a given entry by path stem */
@@ -66,7 +68,7 @@ const TYPE_PILLS = [
   { label: 'Responsibilities', type: 'Responsibility' },
 ] as const
 
-export function NoteList({ entries, selection }: NoteListProps) {
+export function NoteList({ entries, selection, selectedNote, onSelectNote }: NoteListProps) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string | null>(null)
 
@@ -127,7 +129,8 @@ export function NoteList({ entries, selection }: NoteListProps) {
               key={entry.path}
               className={`note-list__item${
                 selection.kind === 'entity' && i === 0 ? ' note-list__item--pinned' : ''
-              }`}
+              }${selectedNote?.path === entry.path ? ' note-list__item--selected' : ''}`}
+              onClick={() => onSelectNote(entry)}
             >
               <div className="note-list__title">{entry.title}</div>
               <div className="note-list__meta">

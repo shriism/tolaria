@@ -6,6 +6,319 @@
 
 import type { VaultEntry } from './types'
 
+const MOCK_CONTENT: Record<string, string> = {
+  '/Users/luca/Laputa/project/26q1-laputa-app.md': `---
+title: Build Laputa App
+is_a: Project
+status: Active
+owner: Luca Rossi
+belongs_to:
+  - "[[quarter/q1-2026]]"
+related_to:
+  - "[[topic/software-development]]"
+---
+
+# Build Laputa App
+
+## Overview
+Custom desktop app for managing life and knowledge, built with **Tauri** + **React** + **CodeMirror 6**.
+
+The goal is to replace Obsidian with a purpose-built tool that understands the Laputa ontology natively — *projects*, *responsibilities*, *procedures*, and how they all connect.
+
+## Key Results
+- [x] Four-panel layout working
+- [x] Sidebar navigation with filtering
+- [x] Vault scanner reads markdown files
+- [ ] CodeMirror 6 editor with live preview
+- [ ] Inspector panel with metadata editing
+
+## Architecture
+The app reads a vault of markdown files with YAML frontmatter:
+\`\`\`
+~/Laputa/
+  project/
+  responsibility/
+  procedure/
+  note/
+  person/
+  event/
+  topic/
+\`\`\`
+
+Each file has frontmatter like:
+\`\`\`yaml
+title: Some Title
+is_a: Project
+status: Active
+\`\`\`
+
+## Related
+See [[Stock Screener — EMA200 Wick Bounce]] for the experiment approach.
+Contact [[Matteo Cellini]] for sponsorship data.
+`,
+  '/Users/luca/Laputa/responsibility/grow-newsletter.md': `---
+title: Grow Newsletter
+is_a: Responsibility
+status: Active
+owner: Luca Rossi
+---
+
+# Grow Newsletter
+
+## Purpose
+Build a sustainable audience through high-quality weekly essays on **engineering leadership**, **AI**, and **personal systems**.
+
+## Key Metrics
+- Subscriber count (target: 100k by Q2 2026)
+- Open rate (target: > 50%)
+- Click-through rate
+
+## Current Strategy
+1. Publish one essay per week — Tuesday morning
+2. Promote via Twitter/X threads
+3. Cross-post to LinkedIn with native formatting
+4. Guest posts on other newsletters monthly
+
+## Procedures
+- [[Write Weekly Essays]] — the core writing workflow
+- Monthly audience analysis and topic planning
+
+## Notes
+The newsletter is the *engine* that drives everything else — sponsorships, consulting leads, and brand building.
+`,
+  '/Users/luca/Laputa/responsibility/manage-sponsorships.md': `---
+title: Manage Sponsorships
+is_a: Responsibility
+status: Active
+owner: Matteo Cellini
+---
+
+# Manage Sponsorships
+
+## Overview
+Revenue stream from newsletter sponsorships. [[Matteo Cellini]] handles day-to-day operations.
+
+## Process
+1. Inbound leads via sponsorship page
+2. Qualification call
+3. Proposal and negotiation
+4. Schedule and deliver
+5. Report results to sponsor
+
+## Metrics
+- Monthly revenue
+- Close rate
+- Repeat sponsor rate
+`,
+  '/Users/luca/Laputa/procedure/write-weekly-essays.md': `---
+title: Write Weekly Essays
+is_a: Procedure
+status: Active
+owner: Luca Rossi
+cadence: Weekly
+belongs_to:
+  - "[[responsibility/grow-newsletter]]"
+---
+
+# Write Weekly Essays
+
+## Schedule
+- **Monday**: Pick topic, outline
+- **Tuesday**: First draft
+- **Wednesday**: Edit and polish
+- **Thursday**: Schedule for Tuesday send
+
+## Writing Guidelines
+- 1500-2500 words
+- One clear takeaway
+- Use *real examples* from personal experience
+- Include actionable advice, not just theory
+`,
+  '/Users/luca/Laputa/procedure/run-sponsorships.md': `---
+title: Run Sponsorships
+is_a: Procedure
+status: Active
+owner: Matteo Cellini
+cadence: Weekly
+belongs_to:
+  - "[[responsibility/manage-sponsorships]]"
+---
+
+# Run Sponsorships
+
+## Weekly Tasks
+- Review pipeline in CRM
+- Follow up with pending proposals
+- Schedule confirmed sponsors
+- Send performance reports to completed sponsors
+
+## Templates
+- Proposal template: \`/templates/sponsorship-proposal.md\`
+- Report template: \`/templates/sponsorship-report.md\`
+`,
+  '/Users/luca/Laputa/experiment/stock-screener.md': `---
+title: Stock Screener — EMA200 Wick Bounce
+is_a: Experiment
+status: Active
+owner: Luca Rossi
+related_to:
+  - "[[topic/trading]]"
+  - "[[topic/algorithmic-trading]]"
+---
+
+# Stock Screener — EMA200 Wick Bounce
+
+## Hypothesis
+Stocks that wick below the 200-day EMA and close above it show a **statistically significant bounce** in the following 5-10 days.
+
+## Setup
+- Scan for daily candles where:
+  - Low < EMA200
+  - Close > EMA200
+  - Volume > 1.5x average
+- Filter for mid-cap stocks ($2B-$20B)
+
+## Results So Far
+| Date | Ticker | Entry | Exit | Return |
+|------|--------|-------|------|--------|
+| 2026-01-15 | AAPL | 182.30 | 189.50 | +3.9% |
+| 2026-01-22 | MSFT | 410.20 | 418.80 | +2.1% |
+
+## Next Steps
+- [ ] Backtest on 10 years of data
+- [ ] Add RSI filter for oversold confirmation
+- [ ] Build automated alerts via Python script
+`,
+  '/Users/luca/Laputa/note/facebook-ads-strategy.md': `---
+title: Facebook Ads Strategy
+is_a: Note
+belongs_to:
+  - "[[project/26q1-laputa-app]]"
+related_to:
+  - "[[topic/growth]]"
+  - "[[topic/ads]]"
+---
+
+# Facebook Ads Strategy
+
+## Key Learnings
+- **Lookalike audiences** from newsletter subscribers convert 3x better than interest-based targeting
+- Video ads outperform static images by 40% on engagement
+- Best performing CTA: "Join 50,000 engineers" (social proof)
+
+## Budget
+- Monthly budget: $2,000
+- Cost per subscriber: ~$1.50 (down from $3.20 in Q3 2025)
+
+## A/B Tests Running
+1. Long-form vs short-form ad copy
+2. Testimonial vs data-driven creative
+`,
+  '/Users/luca/Laputa/note/budget-allocation.md': `---
+title: Budget Allocation
+is_a: Note
+belongs_to:
+  - "[[project/26q1-laputa-app]]"
+---
+
+# Budget Allocation
+
+## Q1 2026
+| Category | Budget | Actual | Delta |
+|----------|--------|--------|-------|
+| Ads | $6,000 | $5,400 | -$600 |
+| Tools | $500 | $480 | -$20 |
+| Freelancers | $2,000 | $1,800 | -$200 |
+
+## Notes
+- Under budget on ads due to improved targeting efficiency
+- Consider reallocating savings to content production
+`,
+  '/Users/luca/Laputa/person/matteo-cellini.md': `---
+title: Matteo Cellini
+is_a: Person
+aliases:
+  - Matteo
+---
+
+# Matteo Cellini
+
+## Role
+Sponsorship manager — handles all sponsor relationships, proposals, and reporting.
+
+## Contact
+- Email: matteo@example.com
+- Slack: @matteo
+
+## Responsibilities
+- [[Manage Sponsorships]]
+- [[Run Sponsorships]]
+`,
+  '/Users/luca/Laputa/event/2026-02-14-laputa-app-kickoff.md': `---
+title: Laputa App Design Session
+is_a: Event
+related_to:
+  - "[[project/26q1-laputa-app]]"
+  - "[[person/matteo-cellini]]"
+---
+
+# Laputa App Design Session
+
+## Date
+2026-02-14
+
+## Attendees
+- Luca Rossi
+- [[Matteo Cellini]]
+
+## Notes
+- Agreed on four-panel layout inspired by Bear Notes
+- CodeMirror 6 for the editor — live preview is critical
+- MVP by end of Q1: sidebar + note list + editor working
+- Inspector panel can wait for M4
+
+## Action Items
+- [ ] Luca: finalize ontology mapping
+- [x] Luca: set up Tauri v2 project scaffold
+- [ ] Matteo: test with real vault data
+`,
+  '/Users/luca/Laputa/topic/software-development.md': `---
+title: Software Development
+is_a: Topic
+aliases:
+  - Dev
+  - Coding
+---
+
+# Software Development
+
+A broad topic covering everything from frontend to systems programming.
+
+## Subtopics of Interest
+- **Frontend**: React, TypeScript, CSS
+- **Desktop**: Tauri, Electron alternatives
+- **AI/ML**: LLMs, agents, code generation
+- **Systems**: Rust, performance optimization
+`,
+  '/Users/luca/Laputa/topic/trading.md': `---
+title: Trading
+is_a: Topic
+aliases:
+  - Algorithmic Trading
+---
+
+# Trading
+
+## Focus Areas
+- Technical analysis (EMA, RSI, volume patterns)
+- Algorithmic screening and alerts
+- Risk management and position sizing
+
+## Active Experiments
+- [[Stock Screener — EMA200 Wick Bounce]]
+`,
+}
+
 const MOCK_ENTRIES: VaultEntry[] = [
   {
     path: '/Users/luca/Laputa/project/26q1-laputa-app.md',
@@ -179,6 +492,7 @@ const MOCK_ENTRIES: VaultEntry[] = [
 
 const mockHandlers: Record<string, (args: any) => any> = {
   list_vault: () => MOCK_ENTRIES,
+  get_note_content: (args: { path: string }) => MOCK_CONTENT[args.path] ?? '',
 }
 
 export function isTauri(): boolean {

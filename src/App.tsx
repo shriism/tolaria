@@ -17,6 +17,8 @@ const DEFAULT_SELECTION: SidebarSelection = { kind: 'filter', filter: 'all' }
 function App() {
   const [entries, setEntries] = useState<VaultEntry[]>([])
   const [selection, setSelection] = useState<SidebarSelection>(DEFAULT_SELECTION)
+  const [selectedNote, setSelectedNote] = useState<VaultEntry | null>(null)
+  const [noteContent, setNoteContent] = useState<string>('')
   const [sidebarWidth, setSidebarWidth] = useState(250)
   const [noteListWidth, setNoteListWidth] = useState(300)
   const [inspectorWidth, setInspectorWidth] = useState(280)
@@ -43,6 +45,22 @@ function App() {
     loadVault()
   }, [])
 
+  const handleSelectNote = useCallback(async (entry: VaultEntry) => {
+    setSelectedNote(entry)
+    try {
+      let content: string
+      if (isTauri()) {
+        content = await invoke<string>('get_note_content', { path: entry.path })
+      } else {
+        content = await mockInvoke<string>('get_note_content', { path: entry.path })
+      }
+      setNoteContent(content)
+    } catch (err) {
+      console.warn('Failed to load note content:', err)
+      setNoteContent('')
+    }
+  }, [])
+
   const handleSidebarResize = useCallback((delta: number) => {
     setSidebarWidth((w) => Math.max(150, Math.min(400, w + delta)))
   }, [])
@@ -63,11 +81,11 @@ function App() {
       </div>
       <ResizeHandle onResize={handleSidebarResize} />
       <div className="app__note-list" style={{ width: noteListWidth }}>
-        <NoteList entries={entries} selection={selection} />
+        <NoteList entries={entries} selection={selection} selectedNote={selectedNote} onSelectNote={handleSelectNote} />
       </div>
       <ResizeHandle onResize={handleNoteListResize} />
       <div className="app__editor">
-        <Editor />
+        <Editor content={noteContent} selectedNote={selectedNote} />
       </div>
       {!inspectorCollapsed && <ResizeHandle onResize={handleInspectorResize} />}
       <div
