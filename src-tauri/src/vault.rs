@@ -30,6 +30,7 @@ pub struct VaultEntry {
     pub created_at: Option<u64>,
     #[serde(rename = "fileSize")]
     pub file_size: u64,
+    pub snippet: String,
 }
 
 /// Intermediate struct to capture YAML frontmatter fields.
@@ -88,6 +89,88 @@ fn extract_title(content: &str, filename: &str) -> String {
     filename.strip_suffix(".md").unwrap_or(filename).to_string()
 }
 
+/// Extract a snippet: first ~160 chars of content after frontmatter/title, stripped of markdown.
+fn extract_snippet(content: &str) -> String {
+    // Remove frontmatter
+    let without_fm = if content.starts_with("---") {
+        if let Some(end) = content[3..].find("---") {
+            content[3 + end + 3..].trim_start()
+        } else {
+            content
+        }
+    } else {
+        content
+    };
+
+    // Skip the first H1 heading line
+    let without_h1 = if let Some(rest) = without_h1_line(without_fm) {
+        rest
+    } else {
+        without_fm
+    };
+
+    // Strip markdown formatting and collapse whitespace
+    let clean: String = without_h1
+        .lines()
+        .filter(|line| {
+            let t = line.trim();
+            // Skip blank lines, headings, code fences, horizontal rules
+            !t.is_empty() && !t.starts_with('#') && !t.starts_with("```") && !t.starts_with("---")
+        })
+        .collect::<Vec<&str>>()
+        .join(" ");
+
+    let stripped = strip_markdown_chars(&clean);
+    if stripped.len() > 160 {
+        format!("{}...", &stripped[..stripped.floor_char_boundary(160)])
+    } else {
+        stripped
+    }
+}
+
+fn without_h1_line(s: &str) -> Option<&str> {
+    for (i, line) in s.lines().enumerate() {
+        if line.trim().starts_with("# ") {
+            // Return everything after this line
+            let offset: usize = s.lines().take(i + 1).map(|l| l.len() + 1).sum();
+            return Some(&s[offset.min(s.len())..]);
+        }
+        // If we hit non-empty non-heading content first, there's no H1 to skip
+        if !line.trim().is_empty() {
+            return None;
+        }
+    }
+    None
+}
+
+fn strip_markdown_chars(s: &str) -> String {
+    let mut result = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+    while let Some(ch) = chars.next() {
+        match ch {
+            '[' => {
+                // Collect until ']' — keep inner text
+                let mut inner = String::new();
+                for c in chars.by_ref() {
+                    if c == ']' { break; }
+                    inner.push(c);
+                }
+                // Skip (url) if it follows
+                if chars.peek() == Some(&'(') {
+                    chars.next();
+                    for c in chars.by_ref() {
+                        if c == ')' { break; }
+                    }
+                }
+                result.push_str(&inner);
+            }
+            '*' | '_' | '`' | '~' => {} // strip these
+            _ => result.push(ch),
+        }
+    }
+    result
+}
+
 /// Parse frontmatter from raw YAML data extracted by gray_matter.
 fn parse_frontmatter(data: &HashMap<String, serde_json::Value>) -> Frontmatter {
     // Convert HashMap to serde_json::Value for deserialization
@@ -128,6 +211,7 @@ pub fn parse_md_file(path: &Path) -> Result<VaultEntry, String> {
     };
 
     let title = extract_title(&parsed.content, &filename);
+    let snippet = extract_snippet(&content);
 
     let metadata = fs::metadata(path).map_err(|e| format!("Failed to stat {}: {}", path.display(), e))?;
     let modified_at = metadata
@@ -188,6 +272,7 @@ pub fn parse_md_file(path: &Path) -> Result<VaultEntry, String> {
         modified_at,
         created_at,
         file_size,
+        snippet,
     })
 }
 
@@ -294,6 +379,202 @@ pub fn scan_vault(vault_path: &str) -> Result<Vec<VaultEntry>, String> {
     // Sort by modified date descending (newest first)
     entries.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
 
+    Ok(entries)
+}
+
+// --- Vault Cache ---
+
+#[derive(Debug, Serialize, Deserialize)]
+struct VaultCache {
+    commit_hash: String,
+    entries: Vec<VaultEntry>,
+}
+
+fn cache_path(vault_path: &str) -> std::path::PathBuf {
+    Path::new(vault_path).join(".laputa-cache.json")
+}
+
+fn git_head_hash(vault_path: &str) -> Option<String> {
+    let output = std::process::Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(vault_path)
+        .output()
+        .ok()?;
+    if output.status.success() {
+        Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else {
+        None
+    }
+}
+
+fn git_changed_files(vault_path: &str, from_hash: &str, to_hash: &str) -> Vec<String> {
+    let mut files = Vec::new();
+
+    // Files changed between commits
+    if let Ok(output) = std::process::Command::new("git")
+        .args(["diff", &format!("{}..{}", from_hash, to_hash), "--name-only"])
+        .current_dir(vault_path)
+        .output()
+    {
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            for line in stdout.lines() {
+                if !line.is_empty() && line.ends_with(".md") {
+                    files.push(line.to_string());
+                }
+            }
+        }
+    }
+
+    // Uncommitted changes (modified + untracked)
+    if let Ok(output) = std::process::Command::new("git")
+        .args(["status", "--porcelain"])
+        .current_dir(vault_path)
+        .output()
+    {
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            for line in stdout.lines() {
+                if line.len() >= 3 {
+                    let path = line[3..].trim().to_string();
+                    if path.ends_with(".md") && !files.contains(&path) {
+                        files.push(path);
+                    }
+                }
+            }
+        }
+    }
+
+    files
+}
+
+fn git_uncommitted_new_files(vault_path: &str) -> Vec<String> {
+    let mut files = Vec::new();
+    if let Ok(output) = std::process::Command::new("git")
+        .args(["status", "--porcelain"])
+        .current_dir(vault_path)
+        .output()
+    {
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            for line in stdout.lines() {
+                if line.len() >= 3 {
+                    let status = &line[..2];
+                    let path = line[3..].trim().to_string();
+                    if path.ends_with(".md") && (status == "??" || status.starts_with('A')) {
+                        files.push(path);
+                    }
+                }
+            }
+        }
+    }
+    files
+}
+
+fn load_cache(vault_path: &str) -> Option<VaultCache> {
+    let path = cache_path(vault_path);
+    let data = fs::read_to_string(&path).ok()?;
+    serde_json::from_str(&data).ok()
+}
+
+fn write_cache(vault_path: &str, cache: &VaultCache) {
+    let path = cache_path(vault_path);
+    if let Ok(data) = serde_json::to_string(cache) {
+        let _ = fs::write(path, data);
+    }
+}
+
+/// Scan vault with incremental caching via git.
+/// Falls back to full scan if cache is missing/corrupt or git is unavailable.
+pub fn scan_vault_cached(vault_path: &str) -> Result<Vec<VaultEntry>, String> {
+    let vault = Path::new(vault_path);
+    if !vault.exists() || !vault.is_dir() {
+        return Err(format!("Vault path does not exist or is not a directory: {}", vault_path));
+    }
+
+    let current_hash = match git_head_hash(vault_path) {
+        Some(h) => h,
+        None => {
+            // No git — full scan, no cache
+            return scan_vault(vault_path);
+        }
+    };
+
+    if let Some(cache) = load_cache(vault_path) {
+        if cache.commit_hash == current_hash {
+            // Same commit — only check for uncommitted new files
+            let new_files = git_uncommitted_new_files(vault_path);
+            let mut entries = cache.entries;
+            let existing_paths: std::collections::HashSet<String> = entries.iter()
+                .map(|e| {
+                    // Normalize to relative path for comparison
+                    e.path.strip_prefix(&format!("{}/", vault_path))
+                        .or_else(|| e.path.strip_prefix(vault_path))
+                        .unwrap_or(&e.path)
+                        .to_string()
+                })
+                .collect();
+
+            for rel_path in new_files {
+                if !existing_paths.contains(&rel_path) {
+                    let abs_path = vault.join(&rel_path);
+                    if abs_path.is_file() {
+                        if let Ok(entry) = parse_md_file(&abs_path) {
+                            entries.push(entry);
+                        }
+                    }
+                }
+            }
+
+            entries.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
+            // Update cache with any new entries
+            write_cache(vault_path, &VaultCache {
+                commit_hash: current_hash,
+                entries: entries.clone(),
+            });
+            return Ok(entries);
+        }
+
+        // Different commit — incremental update
+        let changed_files = git_changed_files(vault_path, &cache.commit_hash, &current_hash);
+        let changed_set: std::collections::HashSet<String> = changed_files.iter().cloned().collect();
+
+        // Keep entries that haven't changed
+        let mut entries: Vec<VaultEntry> = cache.entries
+            .into_iter()
+            .filter(|e| {
+                let rel = e.path.strip_prefix(&format!("{}/", vault_path))
+                    .or_else(|| e.path.strip_prefix(vault_path))
+                    .unwrap_or(&e.path)
+                    .to_string();
+                !changed_set.contains(&rel)
+            })
+            .collect();
+
+        // Re-parse changed files (skip deleted ones)
+        for rel_path in &changed_files {
+            let abs_path = vault.join(rel_path);
+            if abs_path.is_file() {
+                if let Ok(entry) = parse_md_file(&abs_path) {
+                    entries.push(entry);
+                }
+            }
+        }
+
+        entries.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
+        write_cache(vault_path, &VaultCache {
+            commit_hash: current_hash,
+            entries: entries.clone(),
+        });
+        return Ok(entries);
+    }
+
+    // No cache — full scan and write cache
+    let entries = scan_vault(vault_path)?;
+    write_cache(vault_path, &VaultCache {
+        commit_hash: current_hash,
+        entries: entries.clone(),
+    });
     Ok(entries)
 }
 
@@ -463,6 +744,91 @@ This is a project note.
     fn test_get_note_content_nonexistent() {
         let result = get_note_content("/nonexistent/path/file.md");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_extract_snippet_basic() {
+        let content = "---\nIs A: Note\n---\n# My Note\n\nThis is the first paragraph of content.\n\n## Section Two\n\nMore content here.";
+        let snippet = extract_snippet(content);
+        assert!(snippet.starts_with("This is the first paragraph"));
+        assert!(snippet.contains("More content here"));
+    }
+
+    #[test]
+    fn test_extract_snippet_strips_markdown() {
+        let content = "# Title\n\nSome **bold** and *italic* and `code` text.";
+        let snippet = extract_snippet(content);
+        assert_eq!(snippet, "Some bold and italic and code text.");
+    }
+
+    #[test]
+    fn test_extract_snippet_strips_links() {
+        let content = "# Title\n\nSee [this link](https://example.com) and [[wiki link]].";
+        let snippet = extract_snippet(content);
+        assert!(snippet.contains("this link"));
+        assert!(!snippet.contains("https://example.com"));
+    }
+
+    #[test]
+    fn test_extract_snippet_truncates() {
+        let long_content = format!("# Title\n\n{}", "word ".repeat(100));
+        let snippet = extract_snippet(&long_content);
+        assert!(snippet.len() <= 165); // 160 + "..."
+        assert!(snippet.ends_with("..."));
+    }
+
+    #[test]
+    fn test_extract_snippet_no_content() {
+        let content = "---\nIs A: Note\n---\n# Just a Title\n";
+        let snippet = extract_snippet(content);
+        assert_eq!(snippet, "");
+    }
+
+    #[test]
+    fn test_parse_md_file_has_snippet() {
+        let dir = TempDir::new().unwrap();
+        let content = "---\nIs A: Note\n---\n# Test Note\n\nHello, world! This is a snippet.";
+        create_test_file(dir.path(), "test.md", content);
+
+        let entry = parse_md_file(&dir.path().join("test.md")).unwrap();
+        assert_eq!(entry.snippet, "Hello, world! This is a snippet.");
+    }
+
+    #[test]
+    fn test_scan_vault_cached_no_git() {
+        // Without git, scan_vault_cached falls back to scan_vault
+        let dir = TempDir::new().unwrap();
+        create_test_file(dir.path(), "note.md", "# Note\n\nContent here.");
+
+        let entries = scan_vault_cached(dir.path().to_str().unwrap()).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].title, "Note");
+        assert_eq!(entries[0].snippet, "Content here.");
+    }
+
+    #[test]
+    fn test_scan_vault_cached_with_git() {
+        let dir = TempDir::new().unwrap();
+        let vault = dir.path();
+
+        // Init git repo
+        std::process::Command::new("git").args(["init"]).current_dir(vault).output().unwrap();
+        std::process::Command::new("git").args(["config", "user.email", "test@test.com"]).current_dir(vault).output().unwrap();
+        std::process::Command::new("git").args(["config", "user.name", "Test"]).current_dir(vault).output().unwrap();
+
+        create_test_file(vault, "note.md", "# Note\n\nFirst version.");
+        std::process::Command::new("git").args(["add", "."]).current_dir(vault).output().unwrap();
+        std::process::Command::new("git").args(["commit", "-m", "init"]).current_dir(vault).output().unwrap();
+
+        // First call: full scan, writes cache
+        let entries = scan_vault_cached(vault.to_str().unwrap()).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert!(cache_path(vault.to_str().unwrap()).exists());
+
+        // Second call: uses cache (same HEAD)
+        let entries2 = scan_vault_cached(vault.to_str().unwrap()).unwrap();
+        assert_eq!(entries2.len(), 1);
+        assert_eq!(entries2[0].title, "Note");
     }
 
     // Frontmatter update/delete tests are in frontmatter.rs

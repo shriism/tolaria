@@ -8,7 +8,7 @@ use frontmatter::FrontmatterValue;
 
 #[tauri::command]
 fn list_vault(path: String) -> Result<Vec<VaultEntry>, String> {
-    vault::scan_vault(&path)
+    vault::scan_vault_cached(&path)
 }
 
 #[tauri::command]
