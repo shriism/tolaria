@@ -74,6 +74,7 @@ After every meaningful architectural decision or abstraction, update the relevan
 - **Small steps**: Build one thing at a time. Get it working, test it, commit it. Then move to the next.
 - **Test as you go**: Write tests alongside code, not after. If you build a frontmatter parser, test it immediately with real-world examples before moving on.
 - **Verify constantly**: After each meaningful change, run the relevant tests (`cargo test`, `pnpm test`). Don't stack up a bunch of code and hope it all works.
+- **Never develop on `main`**: all work happens on a feature branch (`task/<slug>`). This repo has CI that runs on PRs — pushing directly to main skips the pre-merge checks. Brian merges via PR (`gh pr create` + `gh pr merge`) after Luca approves. If you somehow end up on main, stash your work and switch to the correct branch first.
 - **Commit often — small and atomic**: Each logical unit of work gets its own commit. **Never work for more than 20–30 minutes without committing something.** If you've been coding for 30 min and have no commit, stop and commit what you have — even if it's incomplete (use `wip:` prefix). This protects against session crashes and timeouts. NEVER batch multiple features or fixes into one big commit. Examples of good atomic commits:
   - `feat: update color palette and CSS variables`
   - `feat: restructure sidebar with collapsible sections`
