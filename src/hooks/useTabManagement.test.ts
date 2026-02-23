@@ -270,6 +270,31 @@ describe('useTabManagement', () => {
       expect(result.current.tabs).toHaveLength(1)
       expect(result.current.activeTabPath).toBe('/vault/a.md')
     })
+
+    it('switches to existing tab instead of replacing when note is already open', async () => {
+      const { result } = renderHook(() => useTabManagement())
+
+      // Open two tabs: A (active) and B
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/a.md', title: 'A' }))
+      })
+      await act(async () => {
+        await result.current.handleSelectNote(makeEntry({ path: '/vault/b.md', title: 'B' }))
+      })
+
+      // Switch back to A
+      act(() => { result.current.handleSwitchTab('/vault/a.md') })
+
+      // Replace active tab with B — but B is already open, so it should just switch
+      await act(async () => {
+        await result.current.handleReplaceActiveTab(makeEntry({ path: '/vault/b.md', title: 'B' }))
+      })
+
+      // Should still have 2 tabs (not replace A), and B should be active
+      expect(result.current.tabs).toHaveLength(2)
+      expect(result.current.activeTabPath).toBe('/vault/b.md')
+      expect(result.current.tabs.map(t => t.entry.title)).toEqual(['A', 'B'])
+    })
   })
 
   describe('closeAllTabs', () => {

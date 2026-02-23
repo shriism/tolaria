@@ -6,6 +6,7 @@ import type { VaultEntry, SidebarSelection } from '../types'
 
 const allSelection: SidebarSelection = { kind: 'filter', filter: 'all' }
 const noopSelect = vi.fn()
+const noopReplace = vi.fn()
 
 const mockEntries: VaultEntry[] = [
   {
@@ -132,38 +133,38 @@ const mockEntries: VaultEntry[] = [
 
 describe('NoteList', () => {
   it('shows empty state when no entries', () => {
-    render(<NoteList entries={[]} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={[]} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     expect(screen.getByText('No notes found')).toBeInTheDocument()
   })
 
   it('renders all entries with All Notes filter', () => {
-    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
     expect(screen.getByText('Facebook Ads Strategy')).toBeInTheDocument()
     expect(screen.getByText('Matteo Cellini')).toBeInTheDocument()
   })
 
   it('filters by People (section group)', () => {
-    render(<NoteList entries={mockEntries} selection={{ kind: 'sectionGroup', type: 'Person' }} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={mockEntries} selection={{ kind: 'sectionGroup', type: 'Person' }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     expect(screen.getByText('Matteo Cellini')).toBeInTheDocument()
     expect(screen.queryByText('Build Laputa App')).not.toBeInTheDocument()
   })
 
   it('filters by Events (section group)', () => {
-    render(<NoteList entries={mockEntries} selection={{ kind: 'sectionGroup', type: 'Event' }} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={mockEntries} selection={{ kind: 'sectionGroup', type: 'Event' }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     expect(screen.getByText('Kickoff Meeting')).toBeInTheDocument()
     expect(screen.queryByText('Build Laputa App')).not.toBeInTheDocument()
   })
 
   it('filters by section group type', () => {
-    render(<NoteList entries={mockEntries} selection={{ kind: 'sectionGroup', type: 'Project' }} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={mockEntries} selection={{ kind: 'sectionGroup', type: 'Project' }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
     expect(screen.queryByText('Matteo Cellini')).not.toBeInTheDocument()
   })
 
   it('shows entity pinned at top with grouped children', () => {
     render(
-      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     // Entity title appears in header and pinned card
     expect(screen.getAllByText('Build Laputa App').length).toBeGreaterThanOrEqual(1)
@@ -178,7 +179,7 @@ describe('NoteList', () => {
 
   it('filters by topic (relatedTo references)', () => {
     render(
-      <NoteList entries={mockEntries} selection={{ kind: 'topic', entry: mockEntries[4] }} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={{ kind: 'topic', entry: mockEntries[4] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     // Build Laputa App has relatedTo: [[topic/software-development]]
     expect(screen.getByText('Build Laputa App')).toBeInTheDocument()
@@ -186,7 +187,7 @@ describe('NoteList', () => {
   })
 
   it('shows search input when search icon is clicked', () => {
-    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     // Search is hidden by default
     expect(screen.queryByPlaceholderText('Search notes...')).not.toBeInTheDocument()
     // Click search icon to show it
@@ -195,7 +196,7 @@ describe('NoteList', () => {
   })
 
   it('filters by search query (case-insensitive substring)', () => {
-    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     // Open search
     fireEvent.click(screen.getByTitle('Search notes'))
     const input = screen.getByPlaceholderText('Search notes...')
@@ -210,21 +211,21 @@ describe('NoteList', () => {
       { ...mockEntries[1], modifiedAt: 3000, title: 'Newest', path: '/p2' },
       { ...mockEntries[2], modifiedAt: 2000, title: 'Middle', path: '/p3' },
     ]
-    render(<NoteList entries={entriesWithDifferentDates} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={entriesWithDifferentDates} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     const titles = screen.getAllByText(/Oldest|Newest|Middle/)
     const titleTexts = titles.map((el) => el.textContent)
     expect(titleTexts).toEqual(['Newest', 'Middle', 'Oldest'])
   })
 
   it('does not render type badge or status on note items', () => {
-    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     // Type badges like "Project", "Note" etc. should not appear as separate badge elements
     // The word "Project" should only appear in the ALL CAPS pill "PROJECTS 1", not as a standalone badge
     expect(screen.queryByText('Active')).not.toBeInTheDocument()
   })
 
   it('header shows search and plus icons instead of count badge', () => {
-    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     expect(screen.getByTitle('Search notes')).toBeInTheDocument()
     expect(screen.getByTitle('Create new note')).toBeInTheDocument()
   })
@@ -234,7 +235,7 @@ describe('NoteList', () => {
       [mockEntries[2].path]: 'Met with [[project/26q1-laputa-app]] team.',
     }
     render(
-      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} allContent={allContent} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={allContent} onCreateNote={vi.fn()} />
     )
     expect(screen.getByText('Backlinks')).toBeInTheDocument()
     expect(screen.getByText('Matteo Cellini')).toBeInTheDocument()
@@ -242,7 +243,7 @@ describe('NoteList', () => {
 
   it('context view collapses and expands groups', () => {
     render(
-      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     // Children group is expanded by default
     expect(screen.getByText('Facebook Ads Strategy')).toBeInTheDocument()
@@ -257,10 +258,65 @@ describe('NoteList', () => {
 
   it('context view shows prominent card with entity snippet', () => {
     render(
-      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     // Snippet appears in the prominent card
     expect(screen.getByText('Build a personal knowledge management app.')).toBeInTheDocument()
+  })
+})
+
+describe('NoteList click behavior', () => {
+  beforeEach(() => {
+    noopSelect.mockClear()
+    noopReplace.mockClear()
+  })
+
+  it('regular click calls onReplaceActiveTab (opens in current tab)', () => {
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
+    fireEvent.click(screen.getByText('Build Laputa App'))
+    expect(noopReplace).toHaveBeenCalledWith(mockEntries[0])
+    expect(noopSelect).not.toHaveBeenCalled()
+  })
+
+  it('Cmd+Click calls onSelectNote (opens in new tab)', () => {
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
+    fireEvent.click(screen.getByText('Build Laputa App'), { metaKey: true })
+    expect(noopSelect).toHaveBeenCalledWith(mockEntries[0])
+    expect(noopReplace).not.toHaveBeenCalled()
+  })
+
+  it('Ctrl+Click calls onSelectNote (opens in new tab, Windows/Linux)', () => {
+    render(<NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
+    fireEvent.click(screen.getByText('Build Laputa App'), { ctrlKey: true })
+    expect(noopSelect).toHaveBeenCalledWith(mockEntries[0])
+    expect(noopReplace).not.toHaveBeenCalled()
+  })
+
+  it('Cmd+Click on entity pinned card calls onSelectNote', () => {
+    render(
+      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    fireEvent.click(screen.getByText('Build a personal knowledge management app.'), { metaKey: true })
+    expect(noopSelect).toHaveBeenCalledWith(mockEntries[0])
+    expect(noopReplace).not.toHaveBeenCalled()
+  })
+
+  it('regular click on entity pinned card calls onReplaceActiveTab', () => {
+    render(
+      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    fireEvent.click(screen.getByText('Build a personal knowledge management app.'))
+    expect(noopReplace).toHaveBeenCalledWith(mockEntries[0])
+    expect(noopSelect).not.toHaveBeenCalled()
+  })
+
+  it('click on child note in entity view calls onReplaceActiveTab', () => {
+    render(
+      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
+    )
+    fireEvent.click(screen.getByText('Facebook Ads Strategy'))
+    expect(noopReplace).toHaveBeenCalledWith(mockEntries[1])
+    expect(noopSelect).not.toHaveBeenCalled()
   })
 })
 
@@ -402,21 +458,21 @@ describe('NoteList sort controls', () => {
 
   it('shows sort button in note list header for flat view', () => {
     render(
-      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     expect(screen.getByTestId('sort-button-__list__')).toBeInTheDocument()
   })
 
   it('shows sort dropdown per relationship subsection in entity view', () => {
     render(
-      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={{ kind: 'entity', entry: mockEntries[0] }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     expect(screen.getByTestId('sort-button-Children')).toBeInTheDocument()
   })
 
   it('opens sort menu on click and shows all options', () => {
     render(
-      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     fireEvent.click(screen.getByTestId('sort-button-__list__'))
     expect(screen.getByTestId('sort-menu-__list__')).toBeInTheDocument()
@@ -433,7 +489,7 @@ describe('NoteList sort controls', () => {
       makeEntry({ path: '/c.md', title: 'Middle', modifiedAt: 2000 }),
     ]
     render(
-      <NoteList entries={entries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={entries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     // Default sort: by modified (Zebra first)
     let titles = screen.getAllByText(/Zebra|Alpha|Middle/).map((el) => el.textContent)
@@ -450,7 +506,7 @@ describe('NoteList sort controls', () => {
 
   it('closes sort menu after selecting an option', () => {
     render(
-      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     fireEvent.click(screen.getByTestId('sort-button-__list__'))
     expect(screen.getByTestId('sort-menu-__list__')).toBeInTheDocument()
@@ -460,7 +516,7 @@ describe('NoteList sort controls', () => {
 
   it('shows direction arrows in sort dropdown menu', () => {
     render(
-      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     fireEvent.click(screen.getByTestId('sort-button-__list__'))
     // Each option should have asc and desc direction buttons
@@ -477,7 +533,7 @@ describe('NoteList sort controls', () => {
       makeEntry({ path: '/c.md', title: 'Middle', modifiedAt: 2000 }),
     ]
     render(
-      <NoteList entries={entries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={entries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     // Default sort: modified descending (Zebra first at 3000)
     let titles = screen.getAllByText(/Zebra|Alpha|Middle/).map((el) => el.textContent)
@@ -498,7 +554,7 @@ describe('NoteList sort controls', () => {
       makeEntry({ path: '/b.md', title: 'Alpha', modifiedAt: 1000 }),
     ]
     render(
-      <NoteList entries={entries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={entries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     // Select title sort with desc direction
     fireEvent.click(screen.getByTestId('sort-button-__list__'))
@@ -511,7 +567,7 @@ describe('NoteList sort controls', () => {
 
   it('shows direction icon on the sort button that reflects current direction', () => {
     render(
-      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={mockEntries} selection={allSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
     // Default: modified desc → should have ArrowDown icon
     expect(screen.getByTestId('sort-direction-icon-__list__')).toBeInTheDocument()
@@ -548,7 +604,7 @@ describe('NoteList sort controls', () => {
     const entries = [parent, child1, child2]
 
     render(
-      <NoteList entries={entries} selection={{ kind: 'entity', entry: parent }} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />
+      <NoteList entries={entries} selection={{ kind: 'entity', entry: parent }} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />
     )
 
     // Default sort: by modified — Zebra Note (3000) before Alpha Note (1000)
@@ -664,31 +720,31 @@ describe('NoteList — trash view', () => {
   const trashSelection: SidebarSelection = { kind: 'filter', filter: 'trash' }
 
   it('shows "Trash" header when trash filter is active', () => {
-    render(<NoteList entries={entriesWithTrashed} selection={trashSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={entriesWithTrashed} selection={trashSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     expect(screen.getByText('Trash')).toBeInTheDocument()
   })
 
   it('shows only trashed entries in trash view', () => {
-    render(<NoteList entries={entriesWithTrashed} selection={trashSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={entriesWithTrashed} selection={trashSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     expect(screen.getByText('Old Draft Notes')).toBeInTheDocument()
     expect(screen.getByText('Deprecated API Notes')).toBeInTheDocument()
     expect(screen.queryByText('Build Laputa App')).not.toBeInTheDocument()
   })
 
   it('shows TRASHED badge on trashed entries', () => {
-    render(<NoteList entries={entriesWithTrashed} selection={trashSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={entriesWithTrashed} selection={trashSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     const badges = screen.getAllByText('TRASHED')
     expect(badges.length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows 30-day warning banner when expired notes exist', () => {
-    render(<NoteList entries={entriesWithTrashed} selection={trashSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={entriesWithTrashed} selection={trashSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     expect(screen.getByText('Notes in trash for 30+ days will be permanently deleted')).toBeInTheDocument()
     expect(screen.getByText(/1 note is past the 30-day retention period/)).toBeInTheDocument()
   })
 
   it('shows "Trash is empty" when no trashed entries', () => {
-    render(<NoteList entries={mockEntries} selection={trashSelection} selectedNote={null} onSelectNote={noopSelect} allContent={{}} onCreateNote={vi.fn()} />)
+    render(<NoteList entries={mockEntries} selection={trashSelection} selectedNote={null} onSelectNote={noopSelect} onReplaceActiveTab={noopReplace} allContent={{}} onCreateNote={vi.fn()} />)
     expect(screen.getByText('Trash is empty')).toBeInTheDocument()
   })
 })

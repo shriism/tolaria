@@ -189,7 +189,7 @@ function App() {
         </div>
         <ResizeHandle onResize={layout.handleSidebarResize} />
         <div className="app__note-list" style={{ width: layout.noteListWidth }}>
-          <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} allContent={vault.allContent} modifiedFiles={vault.modifiedFiles} onSelectNote={notes.handleSelectNote} onCreateNote={handleCreateNoteImmediate} />
+          <NoteList entries={vault.entries} selection={selection} selectedNote={activeTab?.entry ?? null} allContent={vault.allContent} modifiedFiles={vault.modifiedFiles} onSelectNote={notes.handleSelectNote} onReplaceActiveTab={notes.handleReplaceActiveTab} onCreateNote={handleCreateNoteImmediate} />
         </div>
         <ResizeHandle onResize={layout.handleNoteListResize} />
         <div className="app__editor">

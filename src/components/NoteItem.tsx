@@ -46,11 +46,11 @@ function TrashDateLine({ entry }: { entry: VaultEntry }) {
   )
 }
 
-export function NoteItem({ entry, isSelected, typeEntryMap, onSelectNote }: {
+export function NoteItem({ entry, isSelected, typeEntryMap, onClickNote }: {
   entry: VaultEntry
   isSelected: boolean
   typeEntryMap: Record<string, VaultEntry>
-  onSelectNote: (entry: VaultEntry) => void
+  onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
 }) {
   const te = typeEntryMap[entry.isA ?? '']
   const typeColor = getTypeColor(entry.isA ?? 'Note', te?.color)
@@ -68,7 +68,7 @@ export function NoteItem({ entry, isSelected, typeEntryMap, onSelectNote }: {
         padding: isSelected ? '14px 16px 14px 13px' : '14px 16px',
         ...(isSelected && { borderLeftColor: typeColor, backgroundColor: typeLightColor }),
       }}
-      onClick={() => onSelectNote(entry)}
+      onClick={(e: React.MouseEvent) => onClickNote(entry, e)}
     >
       {/* eslint-disable-next-line react-hooks/static-components -- icon lookup from static map, no internal state */}
       <TypeIcon width={14} height={14} className="absolute right-3 top-2.5" style={{ color: typeColor }} data-testid="type-icon" />

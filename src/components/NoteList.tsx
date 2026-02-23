@@ -22,13 +22,14 @@ interface NoteListProps {
   allContent: Record<string, string>
   modifiedFiles?: ModifiedFile[]
   onSelectNote: (entry: VaultEntry) => void
+  onReplaceActiveTab: (entry: VaultEntry) => void
   onCreateNote: () => void
 }
 
-function PinnedCard({ entry, typeEntryMap, onSelectNote, showDate }: {
+function PinnedCard({ entry, typeEntryMap, onClickNote, showDate }: {
   entry: VaultEntry
   typeEntryMap: Record<string, VaultEntry>
-  onSelectNote: (entry: VaultEntry) => void
+  onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
   showDate?: boolean
 }) {
   const te = typeEntryMap[entry.isA ?? '']
@@ -36,7 +37,7 @@ function PinnedCard({ entry, typeEntryMap, onSelectNote, showDate }: {
   const bgColor = getTypeLightColor(entry.isA ?? '', te?.color)
   const Icon = getTypeIcon(entry.isA, te?.icon)
   return (
-    <div className="relative cursor-pointer border-b border-[var(--border)]" style={{ backgroundColor: bgColor, padding: '14px 16px' }} onClick={() => onSelectNote(entry)}>
+    <div className="relative cursor-pointer border-b border-[var(--border)]" style={{ backgroundColor: bgColor, padding: '14px 16px' }} onClick={(e: React.MouseEvent) => onClickNote(entry, e)}>
       {/* eslint-disable-next-line react-hooks/static-components */}
       <Icon width={16} height={16} className="absolute right-3 top-3.5" style={{ color }} data-testid="type-icon" />
       <div className="pr-6 text-[14px] font-bold" style={{ color }}>{entry.title}</div>
@@ -112,16 +113,16 @@ function useTypeEntryMap(entries: VaultEntry[]) {
 
 // --- View sub-components ---
 
-function EntityView({ entity, groups, query, collapsedGroups, sortPrefs, onToggleGroup, onSortChange, renderItem, typeEntryMap, onSelectNote }: {
+function EntityView({ entity, groups, query, collapsedGroups, sortPrefs, onToggleGroup, onSortChange, renderItem, typeEntryMap, onClickNote }: {
   entity: VaultEntry; groups: RelationshipGroup[]; query: string
   collapsedGroups: Set<string>; sortPrefs: Record<string, SortConfig>
   onToggleGroup: (label: string) => void; onSortChange: (label: string, opt: SortOption, dir: SortDirection) => void
   renderItem: (entry: VaultEntry) => React.ReactNode
-  typeEntryMap: Record<string, VaultEntry>; onSelectNote: (entry: VaultEntry) => void
+  typeEntryMap: Record<string, VaultEntry>; onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
 }) {
   return (
     <div className="h-full overflow-y-auto">
-      <PinnedCard entry={entity} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} showDate />
+      <PinnedCard entry={entity} typeEntryMap={typeEntryMap} onClickNote={onClickNote} showDate />
       {groups.length === 0
         ? <EmptyMessage text={query ? 'No matching items' : 'No related items'} />
         : groups.map((group) => (
@@ -132,16 +133,16 @@ function EntityView({ entity, groups, query, collapsedGroups, sortPrefs, onToggl
   )
 }
 
-function ListView({ typeDocument, isTrashView, expiredTrashCount, searched, query, renderItem, typeEntryMap, onSelectNote }: {
+function ListView({ typeDocument, isTrashView, expiredTrashCount, searched, query, renderItem, typeEntryMap, onClickNote }: {
   typeDocument: VaultEntry | null; isTrashView: boolean; expiredTrashCount: number
   searched: VaultEntry[]; query: string
   renderItem: (entry: VaultEntry) => React.ReactNode
-  typeEntryMap: Record<string, VaultEntry>; onSelectNote: (entry: VaultEntry) => void
+  typeEntryMap: Record<string, VaultEntry>; onClickNote: (entry: VaultEntry, e: React.MouseEvent) => void
 }) {
   const emptyText = isTrashView ? 'Trash is empty' : (query ? 'No matching notes' : 'No notes found')
   return (
     <div className="h-full overflow-y-auto">
-      {typeDocument && <PinnedCard entry={typeDocument} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} />}
+      {typeDocument && <PinnedCard entry={typeDocument} typeEntryMap={typeEntryMap} onClickNote={onClickNote} />}
       <TrashWarningBanner expiredCount={isTrashView ? expiredTrashCount : 0} />
       {searched.length === 0
         ? <EmptyMessage text={emptyText} />
@@ -165,6 +166,16 @@ function filterGroupsByQuery(groups: RelationshipGroup[], query: string): Relati
 function countExpiredTrash(entries: VaultEntry[]): number {
   const now = Date.now() / 1000
   return entries.filter((e) => e.trashedAt && (now - e.trashedAt) >= 86400 * 30).length
+}
+
+// --- Click routing ---
+
+function routeNoteClick(
+  entry: VaultEntry, e: React.MouseEvent,
+  onSelectNote: (entry: VaultEntry) => void,
+  onReplaceActiveTab: (entry: VaultEntry) => void,
+) {
+  if (e.metaKey || e.ctrlKey) { onSelectNote(entry) } else { onReplaceActiveTab(entry) }
 }
 
 // --- Data hooks ---
@@ -205,7 +216,7 @@ function useNoteListData({ entries, selection, allContent, query, listSort, list
 
 // --- Main component ---
 
-function NoteListInner({ entries, selection, selectedNote, allContent, modifiedFiles, onSelectNote, onCreateNote }: NoteListProps) {
+function NoteListInner({ entries, selection, selectedNote, allContent, modifiedFiles, onSelectNote, onReplaceActiveTab, onCreateNote }: NoteListProps) {
   const [search, setSearch] = useState('')
   const [searchVisible, setSearchVisible] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
@@ -226,9 +237,13 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
   const listDirection = listConfig.direction
   const { isEntityView, isTrashView, typeDocument, searched, searchedGroups, expiredTrashCount } = useNoteListData({ entries, selection, allContent, query, listSort, listDirection, modifiedFiles })
 
+  const handleClickNote = useCallback((entry: VaultEntry, e: React.MouseEvent) => {
+    routeNoteClick(entry, e, onSelectNote, onReplaceActiveTab)
+  }, [onSelectNote, onReplaceActiveTab])
+
   const renderItem = useCallback((entry: VaultEntry) => (
-    <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} />
-  ), [selectedNote?.path, onSelectNote, typeEntryMap])
+    <NoteItem key={entry.path} entry={entry} isSelected={selectedNote?.path === entry.path} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
+  ), [selectedNote?.path, handleClickNote, typeEntryMap])
 
   return (
     <div className="flex flex-col overflow-hidden border-r border-border bg-card text-foreground" style={{ height: '100%' }}>
@@ -253,9 +268,9 @@ function NoteListInner({ entries, selection, selectedNote, allContent, modifiedF
 
       <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
         {isEntityView && selection.kind === 'entity' ? (
-          <EntityView entity={selection.entry} groups={searchedGroups} query={query} collapsedGroups={collapsedGroups} sortPrefs={sortPrefs} onToggleGroup={toggleGroup} onSortChange={handleSortChange} renderItem={renderItem} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} />
+          <EntityView entity={selection.entry} groups={searchedGroups} query={query} collapsedGroups={collapsedGroups} sortPrefs={sortPrefs} onToggleGroup={toggleGroup} onSortChange={handleSortChange} renderItem={renderItem} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
         ) : (
-          <ListView typeDocument={typeDocument} isTrashView={isTrashView} expiredTrashCount={expiredTrashCount} searched={searched} query={query} renderItem={renderItem} typeEntryMap={typeEntryMap} onSelectNote={onSelectNote} />
+          <ListView typeDocument={typeDocument} isTrashView={isTrashView} expiredTrashCount={expiredTrashCount} searched={searched} query={query} renderItem={renderItem} typeEntryMap={typeEntryMap} onClickNote={handleClickNote} />
         )}
       </div>
     </div>

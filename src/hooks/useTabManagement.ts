@@ -76,6 +76,24 @@ function restoreOrder(prev: Tab[], savedOrder: string[]): Tab[] {
   return ordered
 }
 
+function isTabOpen(tabs: Tab[], path: string): boolean {
+  return tabs.some((t) => t.entry.path === path)
+}
+
+async function loadAndSetTab(
+  entry: VaultEntry,
+  updater: (prev: Tab[], content: string) => Tab[],
+  setTabs: React.Dispatch<React.SetStateAction<Tab[]>>,
+) {
+  try {
+    const content = await loadNoteContent(entry.path)
+    setTabs((prev) => updater(prev, content))
+  } catch (err) {
+    console.warn('Failed to load note content:', err)
+    setTabs((prev) => updater(prev, ''))
+  }
+}
+
 export type { Tab }
 
 export function useTabManagement() {
@@ -88,54 +106,31 @@ export function useTabManagement() {
   const handleCloseTabRef = useRef<(path: string) => void>(() => {})
 
   const handleSelectNote = useCallback(async (entry: VaultEntry) => {
-    if (tabsRef.current.some((t) => t.entry.path === entry.path)) {
-      setActiveTabPath(entry.path)
-      return
-    }
-    try {
-      const content = await loadNoteContent(entry.path)
-      setTabs((prev) => addTabIfAbsent(prev, entry, content))
-    } catch (err) {
-      console.warn('Failed to load note content:', err)
-      setTabs((prev) => addTabIfAbsent(prev, entry, ''))
-    }
+    if (isTabOpen(tabsRef.current, entry.path)) { setActiveTabPath(entry.path); return }
+    await loadAndSetTab(entry, (prev, content) => addTabIfAbsent(prev, entry, content), setTabs)
     setActiveTabPath(entry.path)
   }, [])
 
   const handleCloseTab = useCallback((path: string) => {
     setTabs((prev) => {
       const next = prev.filter((t) => t.entry.path !== path)
-      if (path === activeTabPathRef.current) {
-        setActiveTabPath(resolveNextActiveTab(prev, path))
-      }
+      if (path === activeTabPathRef.current) { setActiveTabPath(resolveNextActiveTab(prev, path)) }
       return next
     })
   }, [])
   useEffect(() => { handleCloseTabRef.current = handleCloseTab })
 
-  const handleSwitchTab = useCallback((path: string) => {
-    setActiveTabPath(path)
-  }, [])
+  const handleSwitchTab = useCallback((path: string) => { setActiveTabPath(path) }, [])
 
   const handleReorderTabs = useCallback((fromIndex: number, toIndex: number) => {
-    setTabs((prev) => {
-      const next = reorderArray(prev, fromIndex, toIndex)
-      saveTabOrder(next)
-      return next
-    })
+    setTabs((prev) => { const next = reorderArray(prev, fromIndex, toIndex); saveTabOrder(next); return next })
   }, [])
 
   const handleReplaceActiveTab = useCallback(async (entry: VaultEntry) => {
+    if (isTabOpen(tabsRef.current, entry.path)) { setActiveTabPath(entry.path); return }
     const currentPath = activeTabPathRef.current
     if (!currentPath) { handleSelectNote(entry); return }
-    if (currentPath === entry.path) return
-    try {
-      const content = await loadNoteContent(entry.path)
-      setTabs((prev) => replaceTabEntry(prev, currentPath, entry, content))
-    } catch (err) {
-      console.warn('Failed to load note content for replace:', err)
-      setTabs((prev) => replaceTabEntry(prev, currentPath, entry, ''))
-    }
+    await loadAndSetTab(entry, (prev, content) => replaceTabEntry(prev, currentPath, entry, content), setTabs)
     setActiveTabPath(entry.path)
   }, [handleSelectNote])
 
