@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useEditorSave } from './useEditorSave'
 
@@ -15,9 +15,9 @@ vi.mock('../mock-tauri', () => ({
 }))
 
 describe('useEditorSave', () => {
-  let updateVaultContent: vi.Mock
-  let setTabs: vi.Mock
-  let setToastMessage: vi.Mock
+  let updateVaultContent: Mock
+  let setTabs: Mock
+  let setToastMessage: Mock
 
   beforeEach(() => {
     updateVaultContent = vi.fn()
@@ -105,6 +105,43 @@ describe('useEditorSave', () => {
       path: '/test/note-a.md',
       content: 'content A',
     })
+  })
+
+  it('calls onAfterSave callback after successful save', async () => {
+    const onAfterSave = vi.fn()
+    const { result } = renderHook(() =>
+      useEditorSave({ updateVaultContent, setTabs, setToastMessage, onAfterSave })
+    )
+
+    act(() => {
+      result.current.handleContentChange('/test/note.md', 'new content')
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(onAfterSave).toHaveBeenCalledOnce()
+  })
+
+  it('does not call onAfterSave when save fails', async () => {
+    mockInvokeFn.mockRejectedValueOnce(new Error('Disk full'))
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const onAfterSave = vi.fn()
+    const { result } = renderHook(() =>
+      useEditorSave({ updateVaultContent, setTabs, setToastMessage, onAfterSave })
+    )
+
+    act(() => {
+      result.current.handleContentChange('/test/note.md', 'content')
+    })
+
+    await act(async () => {
+      await result.current.handleSave()
+    })
+
+    expect(onAfterSave).not.toHaveBeenCalled()
+    consoleSpy.mockRestore()
   })
 
   it('handleContentChange buffers the latest content', () => {
