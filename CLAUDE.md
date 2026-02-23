@@ -48,12 +48,27 @@ Features in this project are often described at a high level on purpose. Luca tr
 
 Every feature must have a `design/<slug>.pen` file committed on the feature branch. This is mandatory — Luca reviews it as part of the In Review step.
 
-**The main design file** lives at `ui-design.pen`. Copy it as a starting point:
+**The design file must be ADDITIVE** — it must contain ONLY the new frames for this feature. Do NOT copy ui-design.pen.
+
+Create a fresh file with the correct structure:
 ```bash
-mkdir -p design && cp ui-design.pen design/<slug>.pen
+mkdir -p design
+
+# First, study the frame schema from ui-design.pen:
+node -e "
+const f = JSON.parse(require('fs').readFileSync('ui-design.pen', 'utf8'));
+console.log('Frame schema:', JSON.stringify(f.children[0], null, 2));
+console.log('Variables available:', Object.keys(f.variables || {}));
+"
+
+# Then create the feature file with ONLY new frames (empty children to start):
+echo '{"children": [], "variables": {}}' > design/<slug>.pen
+# Add your feature frames to children[]
 ```
 
-Add new frames to `children[]` for the feature's screens/states. Use existing `variables` (design tokens) — don't invent new values.
+⚠️ **DO NOT** `cp ui-design.pen design/<slug>.pen` — this copies all existing frames and the merge will find 0 new frames (all duplicates), breaking the design workflow.
+
+Add new frames to `children[]` for the feature's screens/states. Use existing `variables` (design tokens) from ui-design.pen — don't invent new values.
 
 **Complex feature** (new panel, new modal, new UI surface) → design first, then implement.
 **Simple feature** (new property, filter pill, minor modification) → implement first, then update design to reflect what was built.
