@@ -13,6 +13,7 @@ import { GitHubVaultModal } from './components/GitHubVaultModal'
 import { useVaultLoader } from './hooks/useVaultLoader'
 import { useSettings } from './hooks/useSettings'
 import { useNoteActions, generateUntitledName } from './hooks/useNoteActions'
+import { useAutoSave } from './hooks/useAutoSave'
 import { useAppKeyboard } from './hooks/useAppKeyboard'
 import { useViewMode } from './hooks/useViewMode'
 import { useEntryActions } from './hooks/useEntryActions'
@@ -79,6 +80,15 @@ function App() {
   }, [settings.anthropic_key])
 
   const notes = useNoteActions({ addEntry: vault.addEntry, updateContent: vault.updateContent, entries: vault.entries, setToastMessage, updateEntry: vault.updateEntry })
+
+  const updateTabAndContent = useCallback((path: string, content: string) => {
+    vault.updateContent(path, content)
+    notes.setTabs((prev: { entry: { path: string }; content: string }[]) =>
+      prev.map((t) => t.entry.path === path ? { ...t, content } : t)
+    )
+  }, [vault, notes])
+
+  const { debouncedSave, flush: flushSave } = useAutoSave(updateTabAndContent)
 
   const entryActions = useEntryActions({
     entries: vault.entries,
@@ -215,6 +225,8 @@ function App() {
             onArchiveNote={entryActions.handleArchiveNote}
             onUnarchiveNote={entryActions.handleUnarchiveNote}
             onRenameTab={handleRenameTab}
+            onContentChange={debouncedSave}
+            onFlushSave={flushSave}
           />
         </div>
       </div>
