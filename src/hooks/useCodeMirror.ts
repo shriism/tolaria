@@ -6,6 +6,7 @@ import { frontmatterHighlightPlugin, frontmatterHighlightTheme } from '../extens
 import { markdownLanguage } from '../extensions/markdownHighlight'
 import { resolveArrowLigatureInput } from '../utils/arrowLigatures'
 import { zoomCursorFix } from '../extensions/zoomCursorFix'
+import type { AppearanceMode } from '../types'
 
 const FONT_FAMILY = '"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
 
@@ -16,13 +17,14 @@ export interface CodeMirrorCallbacks {
   onEscape: () => boolean
 }
 
-function buildBaseTheme() {
-  const bg = '#ffffff'
-  const fg = '#1e1e1e'
-  const gutterBg = '#ffffff'
-  const gutterColor = '#aaa'
-  const activeLineBg = 'rgba(0,100,255,0.06)'
-  const gutterBorder = '#eee'
+function buildBaseTheme(appearanceMode: AppearanceMode) {
+  const isDark = appearanceMode === 'dark'
+  const bg = isDark ? '#1f1d1a' : '#ffffff'
+  const fg = isDark ? '#ece9e1' : '#1e1e1e'
+  const gutterBg = isDark ? '#1f1d1a' : '#ffffff'
+  const gutterColor = isDark ? '#8f8a80' : '#aaa'
+  const activeLineBg = isDark ? 'rgba(91, 140, 255, 0.14)' : 'rgba(0,100,255,0.06)'
+  const gutterBorder = isDark ? '#35322d' : '#eee'
 
   return EditorView.theme({
     '&': {
@@ -111,7 +113,28 @@ export function useCodeMirror(
   containerRef: React.RefObject<HTMLDivElement | null>,
   content: string,
   callbacks: CodeMirrorCallbacks,
+  appearanceMode?: AppearanceMode,
+): React.MutableRefObject<EditorView | null>
+export function useCodeMirror(
+  containerRef: React.RefObject<HTMLDivElement | null>,
+  content: string,
+  appearanceMode: AppearanceMode,
+  callbacks: CodeMirrorCallbacks,
+): React.MutableRefObject<EditorView | null>
+export function useCodeMirror(
+  containerRef: React.RefObject<HTMLDivElement | null>,
+  content: string,
+  thirdArg: AppearanceMode | CodeMirrorCallbacks,
+  fourthArg?: AppearanceMode | CodeMirrorCallbacks,
 ) {
+  const appearanceMode = typeof thirdArg === 'string'
+    ? thirdArg
+    : typeof fourthArg === 'string'
+      ? fourthArg
+      : 'light'
+  const callbacks = typeof thirdArg === 'string'
+    ? fourthArg as CodeMirrorCallbacks
+    : thirdArg
   const viewRef = useRef<EditorView | null>(null)
   const callbacksRef = useRef(callbacks)
   callbacksRef.current = callbacks
@@ -143,9 +166,9 @@ export function useCodeMirror(
         buildArrowLigaturesExtension(),
         keymap.of([...defaultKeymap, ...historyKeymap]),
         buildSaveKeymap(callbacksRef),
-        buildBaseTheme(),
+        buildBaseTheme(appearanceMode),
         markdownLanguage(),
-        frontmatterHighlightTheme(),
+        frontmatterHighlightTheme(appearanceMode === 'dark'),
         frontmatterHighlightPlugin,
         zoomCursorFix(),
         EditorView.updateListener.of((update) => {
@@ -180,7 +203,7 @@ export function useCodeMirror(
       viewRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [appearanceMode])
 
   return viewRef
 }

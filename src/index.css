@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ============================================================
    Theme Variables — Light mode only (dark mode removed for now)
    ============================================================ */
@@ -94,7 +96,80 @@
   --shadow-dialog: rgba(0, 0, 0, 0.15);
 }
 
-/* Dark mode variables removed — light mode only for now */
+.dark {
+  --background: #1C1B19;
+  --foreground: #ECE9E1;
+  --card: #242320;
+  --card-foreground: #ECE9E1;
+  --popover: #242320;
+  --popover-foreground: #ECE9E1;
+  --primary: #5B8CFF;
+  --primary-foreground: #F8FAFF;
+  --secondary: #2B2926;
+  --secondary-foreground: #ECE9E1;
+  --muted: #2B2926;
+  --muted-foreground: #A9A49A;
+  --accent: #312F2B;
+  --accent-foreground: #F0EDE5;
+  --destructive: #E16464;
+  --destructive-foreground: #FFF7F7;
+  --border: #3A3834;
+  --input: #3A3834;
+  --ring: #5B8CFF;
+  --sidebar: #171614;
+  --sidebar-foreground: #E6E1D7;
+  --sidebar-primary: #5B8CFF;
+  --sidebar-primary-foreground: #F8FAFF;
+  --sidebar-accent: #262420;
+  --sidebar-accent-foreground: #ECE9E1;
+  --sidebar-border: #302E2A;
+  --sidebar-ring: #5B8CFF;
+
+  color-scheme: dark;
+  --bg-primary: #1C1B19;
+  --bg-sidebar: #171614;
+  --bg-card: #242320;
+  --bg-hover: #312F2B;
+  --bg-hover-subtle: #2B2926;
+  --bg-selected: #1F2F50;
+  --bg-input: #242320;
+  --bg-button: #2B2926;
+  --bg-dialog: #242320;
+  --text-primary: #ECE9E1;
+  --text-secondary: #A9A49A;
+  --text-tertiary: #8E897F;
+  --text-muted: #6F6A61;
+  --text-faint: #6F6A61;
+  --text-heading: #F3F0E8;
+  --accent-blue: #5B8CFF;
+  --accent-blue-bg: rgba(91, 140, 255, 0.16);
+  --accent-blue-hover: #7AA0FF;
+  --accent-green: #51B37E;
+  --accent-orange: #E18B3A;
+  --accent-orange-light: rgba(225, 139, 58, 0.16);
+  --accent-red: #E16464;
+  --accent-purple: #9B84E8;
+  --accent-yellow: #D7B05B;
+  --accent-blue-light: rgba(91, 140, 255, 0.12);
+  --accent-green-light: rgba(81, 179, 126, 0.14);
+  --accent-purple-light: rgba(155, 132, 232, 0.14);
+  --accent-red-light: rgba(225, 100, 100, 0.14);
+  --accent-yellow-light: rgba(215, 176, 91, 0.14);
+  --accent-teal: #5AB7B5;
+  --accent-teal-light: rgba(90, 183, 181, 0.14);
+  --accent-pink: #D873A8;
+  --accent-pink-light: rgba(216, 115, 168, 0.14);
+  --accent-gray: #9A9BA5;
+  --accent-gray-light: rgba(154, 155, 165, 0.14);
+  --border-primary: #3A3834;
+  --border-subtle: #302E2A;
+  --border-input: #3A3834;
+  --border-dialog: #3A3834;
+  --link-color: #80A8FF;
+  --link-hover: #A9C1FF;
+  --shadow-overlay: rgba(0, 0, 0, 0.5);
+  --shadow-dialog: rgba(0, 0, 0, 0.35);
+}
 
 /* --- Tailwind v4 theme inline: register colors + radii --- */
 @theme inline {

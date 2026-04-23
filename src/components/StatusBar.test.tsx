@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { act, render, screen, fireEvent } from '@testing-library/react'
+import { act, render, screen, fireEvent, within } from '@testing-library/react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { StatusBar } from './StatusBar'
 import { StatusBarPrimarySection } from './status-bar/StatusBarSections'
@@ -82,6 +82,34 @@ describe('StatusBar', () => {
     render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} onOpenFeedback={onOpenFeedback} />)
     fireEvent.click(screen.getByTestId('status-feedback'))
     expect(onOpenFeedback).toHaveBeenCalledOnce()
+  })
+
+  it('renders the appearance toggle between notifications and settings', () => {
+    render(<StatusBar noteCount={100} vaultPath="/Users/luca/Laputa" vaults={vaults} onSwitchVault={vi.fn()} />)
+
+    const footer = screen.getByRole('contentinfo')
+    const notifications = within(footer).getByLabelText('Notifications are coming soon')
+    const appearance = within(footer).getByTestId('status-appearance')
+    const settings = within(footer).getByTestId('status-settings')
+
+    expect(notifications.compareDocumentPosition(appearance) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(appearance.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('calls onToggleAppearance when the appearance icon is clicked', () => {
+    const onToggleAppearance = vi.fn()
+    render(
+      <StatusBar
+        noteCount={100}
+        vaultPath="/Users/luca/Laputa"
+        vaults={vaults}
+        onSwitchVault={vi.fn()}
+        onToggleAppearance={onToggleAppearance}
+      />
+    )
+
+    fireEvent.click(screen.getByTestId('status-appearance'))
+    expect(onToggleAppearance).toHaveBeenCalledOnce()
   })
 
   it('displays active vault name', () => {

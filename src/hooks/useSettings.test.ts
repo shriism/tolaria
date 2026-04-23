@@ -13,6 +13,7 @@ const defaultSettings: Settings = {
   analytics_enabled: null,
   anonymous_id: null,
   release_channel: null,
+  appearance_mode: null,
   default_ai_agent: null,
 }
 
@@ -26,6 +27,7 @@ const savedSettings: Settings = {
   analytics_enabled: null,
   anonymous_id: null,
   release_channel: null,
+  appearance_mode: null,
   default_ai_agent: null,
 }
 
@@ -108,6 +110,7 @@ describe('useSettings', () => {
       analytics_enabled: null,
       anonymous_id: null,
       release_channel: null,
+      appearance_mode: null,
       default_ai_agent: null,
     }
 

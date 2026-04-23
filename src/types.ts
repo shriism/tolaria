@@ -89,8 +89,11 @@ export interface Settings {
   anonymous_id: string | null
   release_channel: string | null
   initial_h1_auto_rename_enabled?: boolean | null
+  appearance_mode?: AppearanceMode | null
   default_ai_agent?: AiAgentId | null
 }
+
+export type AppearanceMode = 'light' | 'dark'
 
 export interface GitPullResult {
   status: 'up_to_date' | 'updated' | 'conflict' | 'no_remote' | 'error'

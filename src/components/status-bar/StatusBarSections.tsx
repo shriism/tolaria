@@ -1,11 +1,11 @@
-import { Bell, Package, Settings } from 'lucide-react'
+import { Bell, Moon, Package, Settings, Sun } from 'lucide-react'
 import { Megaphone } from '@phosphor-icons/react'
 import type { AiAgentId, AiAgentsStatus } from '../../lib/aiAgents'
 import type { VaultAiGuidanceStatus } from '../../lib/vaultAiGuidance'
 import type { ClaudeCodeStatus } from '../../hooks/useClaudeCodeStatus'
 import type { McpStatus } from '../../hooks/useMcpStatus'
 import { useStatusBarAddRemote } from '../../hooks/useStatusBarAddRemote'
-import type { GitRemoteStatus, SyncStatus } from '../../types'
+import type { AppearanceMode, GitRemoteStatus, SyncStatus } from '../../types'
 import { ActionTooltip } from '@/components/ui/action-tooltip'
 import { AiAgentsBadge } from './AiAgentsBadge'
 import { AddRemoteModal } from '../AddRemoteModal'
@@ -30,6 +30,12 @@ const ZOOM_RESET_TOOLTIP = { label: 'Reset the zoom level', shortcut: '⌘0' } a
 const FEEDBACK_TOOLTIP = { label: 'Share feedback' } as const
 const NOTIFICATIONS_TOOLTIP = { label: 'Notifications are coming soon' } as const
 const SETTINGS_TOOLTIP = { label: 'Open settings', shortcut: '⌘,' } as const
+
+function appearanceTooltip(mode: AppearanceMode) {
+  return {
+    label: mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode',
+  } as const
+}
 
 interface StatusBarPrimarySectionProps {
   modifiedCount: number
@@ -72,6 +78,8 @@ interface StatusBarSecondarySectionProps {
   zoomLevel: number
   onZoomReset?: () => void
   onOpenFeedback?: () => void
+  appearanceMode: AppearanceMode
+  onToggleAppearance?: () => void
   onOpenSettings?: () => void
 }
 
@@ -199,9 +207,13 @@ export function StatusBarSecondarySection({
   zoomLevel,
   onZoomReset,
   onOpenFeedback,
+  appearanceMode,
+  onToggleAppearance,
   onOpenSettings,
 }: StatusBarSecondarySectionProps) {
   void noteCount
+  const AppearanceIcon = appearanceMode === 'dark' ? Moon : Sun
+  const appearanceCopy = appearanceTooltip(appearanceMode)
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
@@ -240,6 +252,19 @@ export function StatusBarSecondarySection({
         <span style={DISABLED_STYLE} aria-label={NOTIFICATIONS_TOOLTIP.label}>
           <Bell size={14} />
         </span>
+      </ActionTooltip>
+      <ActionTooltip copy={appearanceCopy} side="top">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          className="text-muted-foreground hover:bg-[var(--hover)] hover:text-foreground"
+          onClick={onToggleAppearance}
+          aria-label={appearanceCopy.label}
+          data-testid="status-appearance"
+        >
+          <AppearanceIcon size={14} />
+        </Button>
       </ActionTooltip>
       <ActionTooltip copy={SETTINGS_TOOLTIP} side="top" align="end">
         <Button

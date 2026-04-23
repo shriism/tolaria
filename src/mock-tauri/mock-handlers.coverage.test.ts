@@ -151,6 +151,7 @@ describe('mockHandlers coverage', () => {
         analytics_enabled: true,
         anonymous_id: 'anon-1',
         release_channel: 'alpha',
+        appearance_mode: 'dark',
         default_ai_agent: 'codex',
       },
     })
@@ -165,6 +166,7 @@ describe('mockHandlers coverage', () => {
       analytics_enabled: true,
       anonymous_id: 'anon-1',
       release_channel: 'alpha',
+      appearance_mode: 'dark',
       default_ai_agent: 'codex',
     })
 

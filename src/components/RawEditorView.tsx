@@ -14,7 +14,7 @@ import {
   type RawEditorAutocompleteState,
 } from '../utils/rawEditorUtils'
 import { useCodeMirror } from '../hooks/useCodeMirror'
-import type { VaultEntry } from '../types'
+import type { AppearanceMode, VaultEntry } from '../types'
 
 export interface RawEditorViewProps {
   content: string
@@ -23,6 +23,7 @@ export interface RawEditorViewProps {
   onContentChange: (path: string, content: string) => void
   vaultPath?: string
   onSave: () => void
+  appearanceMode?: AppearanceMode
   /** Mutable ref updated on every keystroke with the latest doc string.
    *  Allows the parent to flush debounced content before unmount. */
   latestContentRef?: React.MutableRefObject<string | null>
@@ -31,7 +32,7 @@ export interface RawEditorViewProps {
 const DEBOUNCE_MS = 500
 const DROPDOWN_MAX_HEIGHT = 200
 
-export function RawEditorView({ content, path, entries, onContentChange, onSave, latestContentRef, vaultPath }: RawEditorViewProps) {
+export function RawEditorView({ content, path, entries, onContentChange, onSave, latestContentRef, vaultPath, appearanceMode = 'light' }: RawEditorViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pathRef = useRef(path)
@@ -104,7 +105,7 @@ export function RawEditorView({ content, path, entries, onContentChange, onSave,
     onCursorActivity: handleCursorActivity,
     onSave: handleSave,
     onEscape: handleEscape,
-  })
+  }, appearanceMode)
 
   const insertWikilink = useCallback((target: string) => {
     const view = viewRef.current

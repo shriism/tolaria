@@ -5,6 +5,7 @@ import { ArchivedNoteBanner } from '../ArchivedNoteBanner'
 import { ConflictNoteBanner } from '../ConflictNoteBanner'
 import { RawEditorView } from '../RawEditorView'
 import { SingleEditorView } from '../SingleEditorView'
+import type { AppearanceMode } from '../../types'
 import type { useEditorContentModel } from './useEditorContentModel'
 
 type EditorContentModel = ReturnType<typeof useEditorContentModel>
@@ -67,9 +68,10 @@ function RawModeEditorSection({
   onSave,
   rawLatestContentRef,
   vaultPath,
+  appearanceMode,
 }: Pick<
   EditorContentModel,
-  'activeTab' | 'entries' | 'onRawContentChange' | 'onSave' | 'rawLatestContentRef' | 'rawModeContent' | 'vaultPath'
+  'activeTab' | 'entries' | 'onRawContentChange' | 'onSave' | 'rawLatestContentRef' | 'rawModeContent' | 'vaultPath' | 'appearanceMode'
 > & {
   rawMode: boolean
 }) {
@@ -85,6 +87,7 @@ function RawModeEditorSection({
       onSave={onSave ?? (() => {})}
       latestContentRef={rawLatestContentRef}
       vaultPath={vaultPath}
+      appearanceMode={appearanceMode}
     />
   )
 }
@@ -171,16 +174,18 @@ function EditorCanvas({
   onEditorChange,
   isDeletedPreview,
   vaultPath,
+  appearanceMode,
 }: Pick<
   EditorContentModel,
   | 'showEditor'
   | 'cssVars'
   | 'editor'
   | 'entries'
-  | 'onNavigateWikilink'
-  | 'onEditorChange'
-  | 'isDeletedPreview'
-  | 'vaultPath'
+   | 'onNavigateWikilink'
+   | 'onEditorChange'
+   | 'isDeletedPreview'
+   | 'vaultPath'
+   | 'appearanceMode'
 >) {
   if (!showEditor) return null
 
@@ -193,6 +198,7 @@ function EditorCanvas({
           onNavigateWikilink={onNavigateWikilink}
           onChange={onEditorChange}
           vaultPath={vaultPath}
+          appearanceMode={appearanceMode as AppearanceMode}
           editable={!isDeletedPreview}
         />
       </div>
@@ -228,6 +234,7 @@ export function EditorContentLayout(model: EditorContentModel) {
     isDeletedPreview,
     rawLatestContentRef,
     rawModeContent,
+    appearanceMode,
   } = model
 
   if (!activeTab) {
@@ -285,6 +292,7 @@ export function EditorContentLayout(model: EditorContentModel) {
         onSave={onSave}
         rawLatestContentRef={rawLatestContentRef}
         vaultPath={vaultPath}
+        appearanceMode={appearanceMode}
       />
       <EditorCanvas
         showEditor={showEditor}
@@ -295,6 +303,7 @@ export function EditorContentLayout(model: EditorContentModel) {
         onNavigateWikilink={onNavigateWikilink}
         onEditorChange={onEditorChange}
         isDeletedPreview={isDeletedPreview}
+        appearanceMode={appearanceMode}
       />
       {isLoadingNewTab && showEditor && <EditorLoadingSkeleton />}
     </div>

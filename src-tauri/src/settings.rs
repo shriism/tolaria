@@ -17,6 +17,7 @@ pub struct Settings {
     pub anonymous_id: Option<String>,
     pub release_channel: Option<String>,
     pub initial_h1_auto_rename_enabled: Option<bool>,
+    pub appearance_mode: Option<String>,
     pub default_ai_agent: Option<String>,
 }
 
@@ -52,6 +53,13 @@ pub fn normalize_default_ai_agent(value: Option<&str>) -> Option<String> {
     }
 }
 
+pub fn normalize_appearance_mode(value: Option<&str>) -> Option<String> {
+    match value.map(|candidate| candidate.trim().to_ascii_lowercase()) {
+        Some(mode) if mode == "light" || mode == "dark" => Some(mode),
+        _ => None,
+    }
+}
+
 fn normalize_settings(settings: Settings) -> Settings {
     Settings {
         auto_pull_interval_minutes: settings.auto_pull_interval_minutes,
@@ -68,6 +76,7 @@ fn normalize_settings(settings: Settings) -> Settings {
         anonymous_id: normalize_optional_string(settings.anonymous_id),
         release_channel: normalize_release_channel(settings.release_channel.as_deref()),
         initial_h1_auto_rename_enabled: settings.initial_h1_auto_rename_enabled,
+        appearance_mode: normalize_appearance_mode(settings.appearance_mode.as_deref()),
         default_ai_agent: normalize_default_ai_agent(settings.default_ai_agent.as_deref()),
     }
 }
@@ -176,6 +185,7 @@ mod tests {
         Option<&'a str>,
         Option<bool>,
         Option<&'a str>,
+        Option<&'a str>,
     );
 
     fn settings_snapshot(settings: &Settings) -> SettingsSnapshot<'_> {
@@ -190,6 +200,7 @@ mod tests {
             settings.anonymous_id.as_deref(),
             settings.release_channel.as_deref(),
             settings.initial_h1_auto_rename_enabled,
+            settings.appearance_mode.as_deref(),
             settings.default_ai_agent.as_deref(),
         )
     }
@@ -197,7 +208,7 @@ mod tests {
     fn assert_empty_settings(settings: &Settings) {
         assert_eq!(
             settings_snapshot(settings),
-            (None, None, None, None, None, None, None, None, None, None, None)
+            (None, None, None, None, None, None, None, None, None, None, None, None)
         );
     }
 
@@ -240,6 +251,7 @@ mod tests {
             anonymous_id: Some("abc-123-uuid".to_string()),
             release_channel: Some("alpha".to_string()),
             initial_h1_auto_rename_enabled: Some(false),
+            appearance_mode: Some("dark".to_string()),
             default_ai_agent: Some("codex".to_string()),
         };
         let json = serde_json::to_string(&settings).unwrap();
@@ -264,6 +276,7 @@ mod tests {
             autogit_inactive_threshold_seconds: Some(30),
             release_channel: Some("alpha".to_string()),
             initial_h1_auto_rename_enabled: Some(false),
+            appearance_mode: Some("light".to_string()),
             default_ai_agent: Some("codex".to_string()),
             ..Default::default()
         });
@@ -273,6 +286,7 @@ mod tests {
         assert_eq!(loaded.autogit_inactive_threshold_seconds, Some(30));
         assert_eq!(loaded.release_channel.as_deref(), Some("alpha"));
         assert_eq!(loaded.initial_h1_auto_rename_enabled, Some(false));
+        assert_eq!(loaded.appearance_mode.as_deref(), Some("light"));
         assert_eq!(loaded.default_ai_agent.as_deref(), Some("codex"));
     }
 
@@ -281,11 +295,13 @@ mod tests {
         let loaded = save_and_reload(Settings {
             anonymous_id: Some("  test-uuid  ".to_string()),
             release_channel: Some("  alpha  ".to_string()),
+            appearance_mode: Some("  dark  ".to_string()),
             default_ai_agent: Some("  codex  ".to_string()),
             ..Default::default()
         });
         assert_eq!(loaded.anonymous_id.as_deref(), Some("test-uuid"));
         assert_eq!(loaded.release_channel.as_deref(), Some("alpha"));
+        assert_eq!(loaded.appearance_mode.as_deref(), Some("dark"));
         assert_eq!(loaded.default_ai_agent.as_deref(), Some("codex"));
     }
 
@@ -316,6 +332,15 @@ mod tests {
             ..Default::default()
         });
         assert!(loaded.release_channel.is_none());
+    }
+
+    #[test]
+    fn test_invalid_appearance_mode_is_filtered() {
+        let loaded = save_and_reload(Settings {
+            appearance_mode: Some("system".to_string()),
+            ..Default::default()
+        });
+        assert!(loaded.appearance_mode.is_none());
     }
 
     #[test]
@@ -387,6 +412,7 @@ mod tests {
                 Some(true),
                 Some(false),
                 Some("test-uuid-v4"),
+                None,
                 None,
                 None,
                 None,

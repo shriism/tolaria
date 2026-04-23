@@ -138,9 +138,12 @@ test('@smoke edited H1 titles drive note list, search, and wikilink autocomplete
   await openNote(page, 'Alpha Project')
   const editor = page.locator('.bn-editor')
   await expect(editor).toBeVisible({ timeout: 5_000 })
-  await editor.click()
+  const firstParagraph = editor.locator('p').first()
+  await expect(firstParagraph).toBeVisible({ timeout: 5_000 })
+  await firstParagraph.click()
   await page.keyboard.press('End')
   await page.keyboard.press('Enter')
+  await page.waitForTimeout(200)
   await page.keyboard.type('[[Up')
 
   const suggestionMenu = page.locator('.wikilink-menu')

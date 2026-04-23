@@ -1,7 +1,7 @@
 import type React from 'react'
 import { useRef } from 'react'
 import type { useCreateBlockNote } from '@blocknote/react'
-import type { NoteStatus, VaultEntry } from '../../types'
+import type { AppearanceMode, NoteStatus, VaultEntry } from '../../types'
 import { useEditorTheme } from '../../hooks/useTheme'
 import { deriveEditorContentState } from './editorContentState'
 
@@ -37,6 +37,7 @@ export interface EditorContentProps {
   onArchiveNote?: (path: string) => void
   onUnarchiveNote?: (path: string) => void
   vaultPath?: string
+  appearanceMode?: AppearanceMode
   rawModeContent?: string | null
   rawLatestContentRef?: React.MutableRefObject<string | null>
   onRenameFilename?: (path: string, newFilenameStem: string) => void

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
+import { useState } from 'react'
 import { SettingsPanel } from './SettingsPanel'
 import type { Settings } from '../types'
 
@@ -48,7 +49,26 @@ describe('SettingsPanel', () => {
       <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
     )
     expect(screen.getByText('Settings')).toBeInTheDocument()
+    expect(screen.getByText('Appearance')).toBeInTheDocument()
     expect(screen.getByText('Sync & Updates')).toBeInTheDocument()
+  })
+
+  it('places Appearance above Sync & Updates', () => {
+    render(
+      <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+    )
+
+    const appearanceHeading = screen.getByText('Appearance')
+    const syncHeading = screen.getByText('Sync & Updates')
+    expect(appearanceHeading.compareDocumentPosition(syncHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('defaults the appearance switch from the resolved appearance mode', () => {
+    render(
+      <SettingsPanel open={true} settings={emptySettings} resolvedAppearanceMode="dark" onSave={onSave} onClose={onClose} />
+    )
+
+    expect(screen.getByRole('switch', { name: 'Dark mode' })).toHaveAttribute('aria-checked', 'true')
   })
 
   it('calls onSave with stable defaults on save', () => {
@@ -199,6 +219,77 @@ describe('SettingsPanel', () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
       initial_h1_auto_rename_enabled: false,
     }))
+  })
+
+  it('applies and saves the appearance mode immediately when dark mode is toggled on', () => {
+    render(
+      <SettingsPanel open={true} settings={emptySettings} onSave={onSave} onClose={onClose} />
+    )
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Dark mode' }))
+
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
+      appearance_mode: 'dark',
+    }))
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('reverts the previewed appearance when Cancel is clicked', () => {
+    render(
+      <SettingsPanel
+        open={true}
+        settings={{ ...emptySettings, appearance_mode: 'light' }}
+        resolvedAppearanceMode="light"
+        onSave={onSave}
+        onClose={onClose}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Dark mode' }))
+    fireEvent.click(screen.getByText('Cancel'))
+
+    expect(onSave).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      appearance_mode: 'dark',
+    }))
+    expect(onSave).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      appearance_mode: 'light',
+    }))
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('reverts to the original saved appearance even after parent props update during preview', () => {
+    function Wrapper() {
+      const [settings, setSettings] = useState<Settings>({
+        ...emptySettings,
+        appearance_mode: 'light',
+      })
+
+      return (
+        <SettingsPanel
+          open={true}
+          settings={settings}
+          resolvedAppearanceMode="light"
+          onSave={(nextSettings) => {
+            setSettings(nextSettings)
+            onSave(nextSettings)
+          }}
+          onClose={onClose}
+        />
+      )
+    }
+
+    render(<Wrapper />)
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Dark mode' }))
+    fireEvent.click(screen.getByText('Cancel'))
+
+    expect(onSave).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      appearance_mode: 'dark',
+    }))
+    expect(onSave).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      appearance_mode: 'light',
+    }))
+    expect(onClose).toHaveBeenCalledOnce()
   })
 
   it('saves the organization workflow preference when toggled off', () => {

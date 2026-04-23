@@ -16,7 +16,7 @@ import { preFilterWikilinks, deduplicateByPath, MIN_QUERY_LENGTH } from '../util
 import { filterPersonMentions, PERSON_MENTION_MIN_QUERY } from '../utils/personMentionSuggestions'
 import { attachClickHandlers, enrichSuggestionItems } from '../utils/suggestionEnrichment'
 import { WikilinkSuggestionMenu, type WikilinkSuggestionItem } from './WikilinkSuggestionMenu'
-import type { VaultEntry } from '../types'
+import type { AppearanceMode, VaultEntry } from '../types'
 import { _wikilinkEntriesRef } from './editorSchema'
 import { useBlockNoteSideMenuHoverGuard } from './blockNoteSideMenuHoverGuard'
 import { getTolariaSlashMenuItems } from './tolariaEditorFormattingConfig'
@@ -129,6 +129,10 @@ function shouldIgnoreContainerClick(target: HTMLElement) {
 }
 
 function normalizeSuggestionQuery(query: string, triggerCharacter: string): string {
+  if (triggerCharacter === '[[') {
+    return query.replace(/^\[{1,2}/, '')
+  }
+
   return query.startsWith(triggerCharacter)
     ? query.slice(triggerCharacter.length)
     : query
@@ -204,17 +208,17 @@ function useInsertWikilink(editor: ReturnType<typeof useCreateBlockNote>) {
 }
 
 function useSuggestionMenuItems(options: {
-  baseItems: ReturnType<typeof buildBaseSuggestionItems>
+  baseItemsRef: React.MutableRefObject<ReturnType<typeof buildBaseSuggestionItems>>
   editor: ReturnType<typeof useCreateBlockNote>
   insertWikilink: (target: string) => void
-  typeEntryMap: Record<string, VaultEntry>
+  typeEntryMapRef: React.MutableRefObject<Record<string, VaultEntry>>
   vaultPath?: string
 }) {
   const {
-    baseItems,
+    baseItemsRef,
     editor,
     insertWikilink,
-    typeEntryMap,
+    typeEntryMapRef,
     vaultPath,
   } = options
 
@@ -224,12 +228,12 @@ function useSuggestionMenuItems(options: {
     if (normalizedQuery.length < minLength) return null
 
     const candidates = triggerCharacter === '[['
-      ? preFilterWikilinks(baseItems, normalizedQuery)
-      : filterPersonMentions(baseItems, normalizedQuery)
+      ? preFilterWikilinks(baseItemsRef.current, normalizedQuery)
+      : filterPersonMentions(baseItemsRef.current, normalizedQuery)
 
     const items = attachClickHandlers(candidates, insertWikilink, vaultPath ?? '')
-    return enrichSuggestionItems(items, normalizedQuery, typeEntryMap)
-  }, [baseItems, insertWikilink, typeEntryMap, vaultPath])
+    return enrichSuggestionItems(items, normalizedQuery, typeEntryMapRef.current)
+  }, [baseItemsRef, insertWikilink, typeEntryMapRef, vaultPath])
 
   const getWikilinkItems = useCallback(async (query: string): Promise<WikilinkSuggestionItem[]> => (
     buildItems(query, '[[') ?? []
@@ -262,12 +266,13 @@ function useInsertImageCallback(editor: ReturnType<typeof useCreateBlockNote>) {
 }
 
 /** Single BlockNote editor view — content is swapped via replaceBlocks */
-export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange, vaultPath, editable = true }: {
+export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange, vaultPath, appearanceMode = 'light', editable = true }: {
   editor: ReturnType<typeof useCreateBlockNote>
   entries: VaultEntry[]
   onNavigateWikilink: (target: string) => void
   onChange?: () => void
   vaultPath?: string
+  appearanceMode?: AppearanceMode
   editable?: boolean
 }) {
   const { cssVars } = useEditorTheme()
@@ -286,16 +291,24 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
 
   const typeEntryMap = useMemo(() => buildTypeEntryMap(entries), [entries])
   const baseItems = useMemo(() => buildBaseSuggestionItems(entries), [entries])
+  const typeEntryMapRef = useRef(typeEntryMap)
+  const baseItemsRef = useRef(baseItems)
   const insertWikilink = useInsertWikilink(editor)
+
+  useEffect(() => {
+    typeEntryMapRef.current = typeEntryMap
+    baseItemsRef.current = baseItems
+  }, [baseItems, typeEntryMap])
+
   const {
     getWikilinkItems,
     getPersonMentionItems,
     getSlashMenuItems,
   } = useSuggestionMenuItems({
-    baseItems,
+    baseItemsRef,
     editor,
     insertWikilink,
-    typeEntryMap,
+    typeEntryMapRef,
     vaultPath,
   })
 
@@ -308,7 +321,7 @@ export function SingleEditorView({ editor, entries, onNavigateWikilink, onChange
       )}
       <SharedContextBlockNoteView
         editor={editor}
-        theme="light"
+        theme={appearanceMode}
         onChange={onChange}
         editable={editable}
         formattingToolbar={false}

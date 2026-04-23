@@ -110,4 +110,14 @@ describe('useCodeMirror', () => {
     // The extension overrides posAtCoords on the instance (not the prototype)
     expect(Object.prototype.hasOwnProperty.call(view, 'posAtCoords')).toBe(true)
   })
+
+  it('accepts an explicit appearance mode argument', () => {
+    const ref = { current: container }
+    const { result } = renderHook(() =>
+      useCodeMirror(ref, 'hello world', 'dark', noopCallbacks),
+    )
+
+    expect(result.current.current).not.toBeNull()
+    expect(container.querySelector('.cm-editor')).toBeInTheDocument()
+  })
 })

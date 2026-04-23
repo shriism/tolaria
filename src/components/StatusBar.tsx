@@ -3,7 +3,7 @@ import type { VaultAiGuidanceStatus } from '../lib/vaultAiGuidance'
 import { useEffect, useState } from 'react'
 import type { ClaudeCodeStatus } from '../hooks/useClaudeCodeStatus'
 import type { McpStatus } from '../hooks/useMcpStatus'
-import type { GitRemoteStatus, SyncStatus } from '../types'
+import type { AppearanceMode, GitRemoteStatus, SyncStatus } from '../types'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import {
   StatusBarPrimarySection,
@@ -41,6 +41,8 @@ interface StatusBarProps {
   onOpenFeedback?: () => void
   buildNumber?: string
   onCheckForUpdates?: () => void
+  appearanceMode?: AppearanceMode
+  onToggleAppearance?: () => void
   onRemoveVault?: (path: string) => void
   mcpStatus?: McpStatus
   onInstallMcp?: () => void
@@ -81,6 +83,8 @@ export function StatusBar({
   onOpenFeedback,
   buildNumber,
   onCheckForUpdates,
+  appearanceMode = 'light',
+  onToggleAppearance,
   onRemoveVault,
   mcpStatus,
   onInstallMcp,
@@ -156,6 +160,8 @@ export function StatusBar({
           zoomLevel={zoomLevel}
           onZoomReset={onZoomReset}
           onOpenFeedback={onOpenFeedback}
+          appearanceMode={appearanceMode}
+          onToggleAppearance={onToggleAppearance}
           onOpenSettings={onOpenSettings}
         />
       </footer>

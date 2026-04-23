@@ -16,7 +16,7 @@ import {
   type ReactNode,
 } from 'react'
 import { X } from '@phosphor-icons/react'
-import type { Settings } from '../types'
+import type { AppearanceMode, Settings } from '../types'
 import { normalizeReleaseChannel, serializeReleaseChannel, type ReleaseChannel } from '../lib/releaseChannel'
 import { trackEvent } from '../lib/telemetry'
 import { Button } from './ui/button'
@@ -34,6 +34,7 @@ import { Switch } from './ui/switch'
 interface SettingsPanelProps {
   open: boolean
   settings: Settings
+  resolvedAppearanceMode?: AppearanceMode
   aiAgentsStatus?: AiAgentsStatus
   onSave: (settings: Settings) => void
   isGitVault?: boolean
@@ -43,6 +44,7 @@ interface SettingsPanelProps {
 }
 
 interface SettingsDraft {
+  appearanceMode: AppearanceMode
   pullInterval: number
   autoGitEnabled: boolean
   autoGitIdleThresholdSeconds: number
@@ -56,6 +58,8 @@ interface SettingsDraft {
 }
 
 interface SettingsBodyProps {
+  appearanceMode: AppearanceMode
+  setAppearanceMode: (value: AppearanceMode) => void
   pullInterval: number
   setPullInterval: (value: number) => void
   isGitVault: boolean
@@ -91,8 +95,10 @@ function isSaveShortcut(event: ReactKeyboardEvent): boolean {
 function createSettingsDraft(
   settings: Settings,
   explicitOrganizationEnabled: boolean,
+  resolvedAppearanceMode: AppearanceMode,
 ): SettingsDraft {
   return {
+    appearanceMode: settings.appearance_mode ?? resolvedAppearanceMode,
     pullInterval: settings.auto_pull_interval_minutes ?? 5,
     autoGitEnabled: settings.autogit_enabled ?? false,
     autoGitIdleThresholdSeconds: sanitizePositiveInteger(
@@ -137,6 +143,7 @@ function buildSettingsFromDraft(settings: Settings, draft: SettingsDraft): Setti
     anonymous_id: resolveAnonymousId(settings, draft),
     release_channel: serializeReleaseChannel(draft.releaseChannel),
     initial_h1_auto_rename_enabled: draft.initialH1AutoRename,
+    appearance_mode: draft.appearanceMode,
     default_ai_agent: draft.defaultAiAgent,
   }
 }
@@ -158,6 +165,7 @@ function sanitizePositiveInteger(value: number | null | undefined, fallback: num
 export function SettingsPanel({
   open,
   settings,
+  resolvedAppearanceMode = 'light',
   aiAgentsStatus = createMissingAiAgentsStatus(),
   onSave,
   isGitVault = true,
@@ -170,6 +178,7 @@ export function SettingsPanel({
   return (
     <SettingsPanelInner
       settings={settings}
+      resolvedAppearanceMode={resolvedAppearanceMode}
       aiAgentsStatus={aiAgentsStatus}
       onSave={onSave}
       isGitVault={isGitVault}
@@ -181,6 +190,7 @@ export function SettingsPanel({
 }
 
 type SettingsPanelInnerProps = Omit<SettingsPanelProps, 'open' | 'explicitOrganizationEnabled' | 'aiAgentsStatus' | 'isGitVault'> & {
+  resolvedAppearanceMode: AppearanceMode
   aiAgentsStatus: AiAgentsStatus
   isGitVault: boolean
   explicitOrganizationEnabled: boolean
@@ -188,6 +198,7 @@ type SettingsPanelInnerProps = Omit<SettingsPanelProps, 'open' | 'explicitOrgani
 
 function SettingsPanelInner({
   settings,
+  resolvedAppearanceMode,
   aiAgentsStatus,
   onSave,
   isGitVault,
@@ -195,8 +206,10 @@ function SettingsPanelInner({
   onSaveExplicitOrganization,
   onClose,
 }: SettingsPanelInnerProps) {
-  const [draft, setDraft] = useState(() => createSettingsDraft(settings, explicitOrganizationEnabled))
+  const [draft, setDraft] = useState(() => createSettingsDraft(settings, explicitOrganizationEnabled, resolvedAppearanceMode))
   const panelRef = useRef<HTMLDivElement>(null)
+  const initialSavedAppearanceModeRef = useRef<AppearanceMode | null>(settings.appearance_mode ?? null)
+  const initialResolvedAppearanceModeRef = useRef<AppearanceMode>(resolvedAppearanceMode)
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -213,25 +226,49 @@ function SettingsPanelInner({
     [],
   )
 
+  const handleAppearanceModeChange = useCallback((value: AppearanceMode) => {
+    setDraft((current) => ({ ...current, appearanceMode: value }))
+    onSave({
+      ...settings,
+      appearance_mode: value,
+    })
+  }, [onSave, settings])
+
+  const handleCloseWithAppearanceRevert = useCallback(() => {
+    if (draft.appearanceMode !== initialResolvedAppearanceModeRef.current) {
+      onSave({
+        ...settings,
+        appearance_mode: initialSavedAppearanceModeRef.current,
+      })
+    }
+    onClose()
+  }, [draft.appearanceMode, onClose, onSave, settings])
+
   const handleSave = useCallback(() => {
     trackTelemetryConsentChange(settings.analytics_enabled === true, draft.analytics)
-    onSave(buildSettingsFromDraft(settings, draft))
+    onSave({
+      ...buildSettingsFromDraft(settings, draft),
+      appearance_mode:
+        draft.appearanceMode === initialResolvedAppearanceModeRef.current
+          ? initialSavedAppearanceModeRef.current
+          : draft.appearanceMode,
+    })
     onSaveExplicitOrganization?.(draft.explicitOrganization)
     onClose()
   }, [draft, onClose, onSave, onSaveExplicitOrganization, settings])
 
   const handleBackdropClick = useCallback(
     (event: ReactMouseEvent<HTMLDivElement>) => {
-      if (event.target === event.currentTarget) onClose()
+      if (event.target === event.currentTarget) handleCloseWithAppearanceRevert()
     },
-    [onClose],
+    [handleCloseWithAppearanceRevert],
   )
 
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent) => {
       if (event.key === 'Escape') {
         event.stopPropagation()
-        onClose()
+        handleCloseWithAppearanceRevert()
         return
       }
 
@@ -240,7 +277,7 @@ function SettingsPanelInner({
         handleSave()
       }
     },
-    [handleSave, onClose],
+    [handleCloseWithAppearanceRevert, handleSave],
   )
 
   return (
@@ -256,8 +293,10 @@ function SettingsPanelInner({
         className="bg-background border border-border rounded-lg shadow-xl"
         style={{ width: 520, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
       >
-        <SettingsHeader onClose={onClose} />
+        <SettingsHeader onClose={handleCloseWithAppearanceRevert} />
         <SettingsBody
+          appearanceMode={draft.appearanceMode}
+          setAppearanceMode={handleAppearanceModeChange}
           pullInterval={draft.pullInterval}
           setPullInterval={(value) => updateDraft('pullInterval', value)}
           isGitVault={isGitVault}
@@ -281,7 +320,7 @@ function SettingsPanelInner({
           analytics={draft.analytics}
           setAnalytics={(value) => updateDraft('analytics', value)}
         />
-        <SettingsFooter onClose={onClose} onSave={handleSave} />
+        <SettingsFooter onClose={handleCloseWithAppearanceRevert} onSave={handleSave} />
       </div>
     </div>
   )
@@ -308,6 +347,8 @@ function SettingsHeader({ onClose }: { onClose: () => void }) {
 }
 
 function SettingsBody({
+  appearanceMode,
+  setAppearanceMode,
   pullInterval,
   setPullInterval,
   isGitVault,
@@ -334,6 +375,13 @@ function SettingsBody({
   return (
     <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 0, overflow: 'auto' }}>
       <SettingsSection showDivider={false}>
+        <AppearanceSection
+          appearanceMode={appearanceMode}
+          setAppearanceMode={setAppearanceMode}
+        />
+      </SettingsSection>
+
+      <SettingsSection>
         <SyncAndUpdatesSection
           pullInterval={pullInterval}
           setPullInterval={setPullInterval}
@@ -410,7 +458,6 @@ function SyncAndUpdatesSection({
           label: `${value}`,
         }))}
         testId="settings-pull-interval"
-        autoFocus={true}
       />
 
       <LabeledSelect
@@ -422,6 +469,29 @@ function SyncAndUpdatesSection({
           { value: 'alpha', label: 'Alpha' },
         ]}
         testId="settings-release-channel"
+      />
+    </>
+  )
+}
+
+function AppearanceSection({
+  appearanceMode,
+  setAppearanceMode,
+}: Pick<SettingsBodyProps, 'appearanceMode' | 'setAppearanceMode'>) {
+  return (
+    <>
+      <SectionHeading
+        title="Appearance"
+        description="Choose how Tolaria looks. Until you choose a mode, the first launch follows your current system appearance."
+      />
+
+      <SettingsSwitchRow
+        label="Dark mode"
+        description="Use Tolaria's darker appearance across the app surface."
+        checked={appearanceMode === 'dark'}
+        onChange={(checked) => setAppearanceMode(checked ? 'dark' : 'light')}
+        testId="settings-appearance-mode"
+        autoFocus={true}
       />
     </>
   )
@@ -736,6 +806,7 @@ function SettingsSwitchRow({
   onChange,
   disabled = false,
   testId,
+  autoFocus = false,
 }: {
   label: string
   description: string
@@ -743,6 +814,7 @@ function SettingsSwitchRow({
   onChange: (value: boolean) => void
   disabled?: boolean
   testId?: string
+  autoFocus?: boolean
 }) {
   return (
     <label
@@ -754,7 +826,13 @@ function SettingsSwitchRow({
         <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--foreground)' }}>{label}</div>
         <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>{description}</div>
       </div>
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={label} disabled={disabled} />
+      <Switch
+        checked={checked}
+        onCheckedChange={onChange}
+        aria-label={label}
+        disabled={disabled}
+        data-settings-autofocus={autoFocus ? 'true' : undefined}
+      />
     </label>
   )
 }

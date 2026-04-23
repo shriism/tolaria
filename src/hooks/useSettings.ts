@@ -19,7 +19,12 @@ const EMPTY_SETTINGS: Settings = {
   analytics_enabled: null,
   anonymous_id: null,
   release_channel: null,
+  appearance_mode: null,
   default_ai_agent: null,
+}
+
+function normalizeAppearanceMode(value: Settings['appearance_mode']): Settings['appearance_mode'] {
+  return value === 'light' || value === 'dark' ? value : null
 }
 
 function normalizeSettings(settings: Settings): Settings {
@@ -28,6 +33,7 @@ function normalizeSettings(settings: Settings): Settings {
     release_channel: serializeReleaseChannel(
       normalizeReleaseChannel(settings.release_channel),
     ),
+    appearance_mode: normalizeAppearanceMode(settings.appearance_mode),
     default_ai_agent: normalizeStoredAiAgent(settings.default_ai_agent),
   }
 }

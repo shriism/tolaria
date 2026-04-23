@@ -263,19 +263,20 @@ tolaria/
 
 | File | Why it matters |
 |------|---------------|
-| `src/index.css` | All CSS custom properties. The design token source of truth. |
+| `src/index.css` | All CSS custom properties for the built-in light and dark appearances. The design token source of truth. |
 | `src/theme.json` | Editor-specific theme (fonts, headings, lists, code blocks). |
 
 ### Settings & Config
 
 | File | Why it matters |
 |------|---------------|
-| `src/hooks/useSettings.ts` | App settings (telemetry, release channel, auto-sync interval, default AI agent). |
+| `src/hooks/useSettings.ts` | App settings (telemetry, release channel, appearance, auto-sync interval, default AI agent). |
+| `src/hooks/useAppearance.ts` | Resolves the current app appearance from settings or the system default and applies it to the document root. |
 | `src/lib/releaseChannel.ts` | Normalizes persisted updater-channel values (`stable` default, optional `alpha`). |
 | `src/lib/appUpdater.ts` | Frontend wrapper for channel-aware updater commands. |
 | `src/hooks/useMainWindowSizeConstraints.ts` | Derives the main-window minimum width from the visible panes and asks Tauri to grow back to fit wider layouts. |
 | `src/hooks/useVaultConfig.ts` | Per-vault local UI preferences (zoom, view mode, colors, Inbox columns, explicit organization workflow). |
-| `src/components/SettingsPanel.tsx` | Settings UI for telemetry, release channel, sync interval, default AI agent, and the vault-level explicit organization toggle. |
+| `src/components/SettingsPanel.tsx` | Settings UI for appearance, telemetry, release channel, sync interval, default AI agent, and the vault-level explicit organization toggle. |
 | `src/hooks/useUpdater.ts` | In-app updates using the selected alpha/stable feed. |
 
 ## Architecture Patterns

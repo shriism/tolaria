@@ -4,7 +4,7 @@ import { useCreateBlockNote } from '@blocknote/react'
 import '@blocknote/mantine/style.css'
 import { uploadImageFile } from '../hooks/useImageDrop'
 import { DEFAULT_AI_AGENT, type AiAgentId } from '../lib/aiAgents'
-import type { VaultEntry, GitCommit, NoteStatus } from '../types'
+import type { AppearanceMode, VaultEntry, GitCommit, NoteStatus } from '../types'
 import type { NoteListItem } from '../utils/ai-context'
 import type { FrontmatterValue } from './Inspector'
 import { ResizeHandle } from './ResizeHandle'
@@ -61,6 +61,7 @@ interface EditorProps {
   vaultPath?: string
   noteList?: NoteListItem[]
   noteListFilter?: { type: string | null; query: string }
+  appearanceMode?: AppearanceMode
   onToggleFavorite?: (path: string) => void
   onToggleOrganized?: (path: string) => void
   onDeleteNote?: (path: string) => void
@@ -306,6 +307,7 @@ function EditorLayout({
   gitHistory,
   noteList,
   noteListFilter,
+  appearanceMode = 'light',
   handleViewCommitDiff,
   onUpdateFrontmatter,
   onDeleteProperty,
@@ -359,6 +361,7 @@ function EditorLayout({
   gitHistory: GitCommit[]
   noteList?: NoteListItem[]
   noteListFilter?: { type: string | null; query: string }
+  appearanceMode?: AppearanceMode
   handleViewCommitDiff: (commitHash: string) => Promise<void>
   onUpdateFrontmatter?: (path: string, key: string, value: FrontmatterValue) => Promise<void>
   onDeleteProperty?: (path: string, key: string) => Promise<void>
@@ -396,15 +399,16 @@ function EditorLayout({
               onToggleInspector={onToggleInspector}
               onNavigateWikilink={onNavigateWikilink}
               onEditorChange={handleEditorChange}
-              onToggleFavorite={onToggleFavorite}
-              onToggleOrganized={onToggleOrganized}
-              onDeleteNote={onDeleteNote}
-              onArchiveNote={onArchiveNote}
-              onUnarchiveNote={onUnarchiveNote}
-              vaultPath={vaultPath}
-              rawModeContent={rawModeContent}
-              rawLatestContentRef={rawLatestContentRef}
-              onRenameFilename={onRenameFilename}
+               onToggleFavorite={onToggleFavorite}
+               onToggleOrganized={onToggleOrganized}
+               onDeleteNote={onDeleteNote}
+               onArchiveNote={onArchiveNote}
+               onUnarchiveNote={onUnarchiveNote}
+               vaultPath={vaultPath}
+               appearanceMode={appearanceMode}
+               rawModeContent={rawModeContent}
+               rawLatestContentRef={rawLatestContentRef}
+               onRenameFilename={onRenameFilename}
               isConflicted={isConflicted}
               onKeepMine={onKeepMine}
               onKeepTheirs={onKeepTheirs}
@@ -456,6 +460,7 @@ export const Editor = memo(function Editor(props: EditorProps) {
     onUpdateFrontmatter, onDeleteProperty, onAddProperty, onCreateMissingType, onCreateAndOpenNote, onInitializeProperties,
     showAIChat, onToggleAIChat,
     vaultPath, noteList, noteListFilter,
+    appearanceMode = 'light',
     onToggleFavorite, onToggleOrganized, onDeleteNote, onArchiveNote, onUnarchiveNote,
     onContentChange, onSave, onRenameFilename,
     onFileCreated, onFileModified, onVaultChanged,
@@ -530,6 +535,7 @@ export const Editor = memo(function Editor(props: EditorProps) {
       gitHistory={gitHistory}
       noteList={noteList}
       noteListFilter={noteListFilter}
+      appearanceMode={appearanceMode}
       handleViewCommitDiff={handleViewCommitDiff}
       onUpdateFrontmatter={onUpdateFrontmatter}
       onDeleteProperty={onDeleteProperty}
