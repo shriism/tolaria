@@ -534,7 +534,7 @@ Typed ASCII arrow sequences are normalized consistently in both editor modes:
 
 ## Styling
 
-The app uses two built-in appearances — `light` and `dark` — while keeping the vault-based theming system removed (see [ADR-0013](adr/0013-remove-theming-system.md) and [ADR-0076](adr/0076-built-in-light-dark-appearance-toggle.md)). Styling is defined in two layers:
+The app uses a single light theme — the vault-based theming system was removed (see [ADR-0013](adr/0013-remove-theming-system.md)). Styling is defined in two layers:
 
 1. **Global CSS variables** (`src/index.css`): App-wide colors via `:root`, bridged to Tailwind v4
 2. **Editor theme** (`src/theme.json`): BlockNote typography, flattened to CSS vars by `useEditorTheme`
@@ -647,12 +647,11 @@ interface Settings {
   analytics_enabled: boolean | null
   anonymous_id: string | null
   release_channel: string | null // null = stable default, "alpha" = every-push prerelease feed
-  appearance_mode: 'light' | 'dark' | null // null = follow system on startup until the user chooses
   default_ai_agent: 'claude_code' | 'codex' | null
 }
 ```
 
-Managed by `useSettings` and `useAppearance`, plus the `SettingsPanel` and status-bar appearance toggle. `default_ai_agent` is an installation-local preference that selects which supported CLI agent the AI panel, command palette AI mode, and status bar should target by default. The AutoGit fields are also installation-local: `useAutoGit` consumes them to schedule automatic checkpoints, while `useCommitFlow` and the status bar quick action reuse the same checkpoint runner and deterministic automatic commit message generation.
+Managed by `useSettings` hook and `SettingsPanel` component. `default_ai_agent` is an installation-local preference that selects which supported CLI agent the AI panel, command palette AI mode, and status bar should target by default. The AutoGit fields are also installation-local: `useAutoGit` consumes them to schedule automatic checkpoints, while `useCommitFlow` and the status bar quick action reuse the same checkpoint runner and deterministic automatic commit message generation.
 
 ## Telemetry
 

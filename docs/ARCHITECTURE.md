@@ -404,7 +404,7 @@ flowchart TD
 
 ## Styling
 
-Tolaria ships with two built-in appearances, `light` and `dark`, and no user-configurable theme authoring (see [ADR-0013](adr/0013-remove-theming-system.md) and [ADR-0076](adr/0076-built-in-light-dark-appearance-toggle.md)). The initial default follows the system appearance until the user explicitly picks a mode.
+The app uses a single light theme with no user-configurable theming (see [ADR-0013](adr/0013-remove-theming-system.md)).
 
 1. **Global CSS variables** (`src/index.css`): App-wide colors, borders, backgrounds. Bridged to Tailwind v4 via `@theme inline`.
 2. **Editor theme** (`src/theme.json`): BlockNote-specific typography. Flattened to CSS vars by `useEditorTheme`.
@@ -430,7 +430,6 @@ Per-vault UI settings stored locally per vault path (currently in browser/Tauri 
 - `zoom`: Float zoom level (0.8–1.5)
 - `view_mode`: "all" | "editor-list" | "editor-only"
 - `editor_mode`: "raw" | "preview" (persists across note switches and sessions)
-- `appearance_mode`: `"light" | "dark" | null` (`null` = follow current system appearance on startup until the user chooses)
 - `tag_colors`, `status_colors`: Custom color overrides
 - `property_display_modes`: Property display preferences
 - `inbox.noteListProperties`: Optional Inbox-only property chip override for the note list
@@ -750,14 +749,13 @@ No Redux or global context. State lives in the root `App.tsx` and custom hooks:
 | `useTabManagement` | Navigation history, note switching | Note navigation lifecycle |
 | `useVaultSwitcher` | `vaultPath`, `extraVaults` | Vault switching |
 | `useTheme` | Editor theme CSS vars | Editor typography theme |
-| `useAppearance` | Resolved app appearance (`light` / `dark`) | Applies the persisted or system-default appearance to the document root |
 | `useCliAiAgent` | `messages`, `status`, tool actions | Selected AI agent conversation |
 | `useAutoSync` | Sync interval, pull/push state | Git auto-sync |
 | `useAutoGit` | Last activity timestamp, idle/inactive checkpoint triggers | Automatic commit/push checkpoints |
 | `useCommitFlow` | Commit dialog state, shared manual/automatic checkpoint runner | Git commit/push orchestration |
 | `useGitRemoteStatus` | `remoteStatus`, `refreshRemoteStatus()` | On-demand remote detection for commit UI |
 | `useUnifiedSearch` | Query, results, loading state | Keyword search |
-| `useSettings` | App settings (telemetry, release channel, appearance, auto-sync interval, AutoGit thresholds, default AI agent) | Persistent settings |
+| `useSettings` | App settings (telemetry, release channel, auto-sync interval, AutoGit thresholds, default AI agent) | Persistent settings |
 | `useVaultConfig` | Per-vault UI preferences | Vault-specific config |
 | `appCommandDispatcher` | Canonical shortcut/menu command IDs | Shared execution path for renderer and native menu commands |
 
