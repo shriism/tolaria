@@ -251,7 +251,6 @@ function App() {
   })
   const {
     allVaults,
-    defaultPath,
     registerVaultSelection,
     selectedVaultPath,
     syncVaultSelection,
@@ -1320,13 +1319,13 @@ function App() {
 
   const shouldResumeFreshStartOnboarding = useMemo(() => {
     if (onboarding.state.status !== 'ready' || !vaultSwitcher.loaded) return false
-    const remembersOnlyDefaultVault = selectedVaultPath === null || selectedVaultPath === defaultPath
+    const remembersOnlyImplicitDefaultVault = selectedVaultPath === null
 
-    return remembersOnlyDefaultVault
+    return remembersOnlyImplicitDefaultVault
       && vaultSwitcher.allVaults.length === 1
       && vaultSwitcher.allVaults[0]?.path === vaultSwitcher.vaultPath
       && onboarding.state.vaultPath === vaultSwitcher.vaultPath
-  }, [defaultPath, onboarding.state, selectedVaultPath, vaultSwitcher.allVaults, vaultSwitcher.loaded, vaultSwitcher.vaultPath])
+  }, [onboarding.state, selectedVaultPath, vaultSwitcher.allVaults, vaultSwitcher.loaded, vaultSwitcher.vaultPath])
 
   // Show loading spinner while checking vault (skip for note windows)
   if (!noteWindowParams && onboarding.state.status === 'loading') {

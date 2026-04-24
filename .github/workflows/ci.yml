@@ -82,14 +82,13 @@ jobs:
 
       - name: Rust coverage (≥85% lines)
         run: |
-          cargo llvm-cov \
-            --manifest-path src-tauri/Cargo.toml \
-            --ignore-filename-regex 'lib\.rs|main\.rs|menu\.rs' \
+          sh scripts/run-rust-coverage.sh \
             --lcov \
             --output-path coverage/rust.lcov \
             --fail-under-lines 85
         # cargo-llvm-cov exits non-zero if line coverage drops below 85%
-        # lib.rs/main.rs/menu.rs are Tauri boilerplate -- not meaningfully unit-testable.
+        # The helper script excludes Tauri transport adapters and shell entrypoints
+        # so the gate tracks core Rust logic instead of IPC boilerplate.
 
       - name: Upload coverage to Codecov
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository

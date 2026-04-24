@@ -140,10 +140,8 @@ if [ "$RUST_CHANGED" = true ]; then
   # Unset GIT_DIR so git tests create isolated repos without inheriting hook context
   unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
   # shellcheck disable=SC2086
-  cargo llvm-cov \
-    --manifest-path src-tauri/Cargo.toml \
+  sh scripts/run-rust-coverage.sh \
     $LLVM_COV_FLAGS \
-    --ignore-filename-regex "lib\.rs|main\.rs|menu\.rs" \
     --fail-under-lines 85 \
     -- --test-threads=1
   echo "  ✅ Rust coverage OK"
